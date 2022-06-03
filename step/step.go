@@ -3,8 +3,8 @@ package step
 import (
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
@@ -18,6 +18,34 @@ const (
 	testResultBundleKey       = "BITRISE_XCRESULT_PATH"
 	zippedTestResultBundleKey = "BITRISE_XCRESULT_ZIP_PATH"
 )
+
+const (
+	timeOutMessageIPhoneSimulator            = "iPhoneSimulator: Timed out waiting"
+	timeOutMessageUITest                     = "Terminating app due to uncaught exception '_XCTestCaseInterruptionException'"
+	earlyUnexpectedExit                      = "Early unexpected exit, operation never finished bootstrapping - no restart will be attempted"
+	failureAttemptingToLaunch                = "Assertion Failure: <unknown>:0: UI Testing Failure - Failure attempting to launch <XCUIApplicationImpl:"
+	failedToBackgroundTestRunner             = `Error Domain=IDETestOperationsObserverErrorDomain Code=12 "Failed to background test runner.`
+	appStateIsStillNotRunning                = `App state is still not running active, state = XCApplicationStateNotRunning`
+	appAccessibilityIsNotLoaded              = `UI Testing Failure - App accessibility isn't loaded`
+	testRunnerFailedToInitializeForUITesting = `Test runner failed to initialize for UI testing`
+	timedOutRegisteringForTestingEvent       = `Timed out registering for testing event accessibility notifications`
+	testRunnerNeverBeganExecuting            = `Test runner never began executing tests after launching.`
+	failedToOpenTestRunner                   = `Error Domain=FBSOpenApplicationServiceErrorDomain Code=1 "The request to open.*NSLocalizedFailureReason=The request was denied by service delegate \(SBMainWorkspace\)\.`
+)
+
+var testRunnerErrorPatterns = []string{
+	timeOutMessageIPhoneSimulator,
+	timeOutMessageUITest,
+	earlyUnexpectedExit,
+	failureAttemptingToLaunch,
+	failedToBackgroundTestRunner,
+	appStateIsStillNotRunning,
+	appAccessibilityIsNotLoaded,
+	testRunnerFailedToInitializeForUITesting,
+	timedOutRegisteringForTestingEvent,
+	testRunnerNeverBeganExecuting,
+	failedToOpenTestRunner,
+}
 
 type Input struct {
 	Xctestrun         string `env:"xctestrun,required"`
@@ -95,18 +123,24 @@ func (s Step) Run(config Config) (*Result, error) {
 	}
 
 	outputDir, err := s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.XcodebuildOptions...)
-	result.TestOutputDir = outputDir
-
 	if err != nil {
-		var exerr *exec.ExitError
-		if errors.As(err, &exerr) {
-			return result, fmt.Errorf("failing tests (exist status %v)", exerr.ExitCode())
-		} else {
-			return result, fmt.Errorf("test execute failed: %w", err)
+		var xcErr *xcodebuild.XcodebuildError
+		if errors.As(err, &xcErr) {
+			for _, errorPattern := range testRunnerErrorPatterns {
+				if isStringFoundInOutput(errorPattern, xcErr.Log) {
+					s.logger.Warnf("Automatic retry reason found in log: %s", errorPattern)
+					outputDir, err = s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.XcodebuildOptions...)
+				}
+			}
 		}
 	}
 
-	s.logger.TDonef("Passing tests")
+	result.TestOutputDir = outputDir
+
+	if err == nil {
+		s.logger.TDonef("Passing tests")
+	}
+
 	return result, err
 }
 
@@ -141,4 +175,9 @@ func (s Step) ExportOutputs(result Result) error {
 		}
 	}
 	return nil
+}
+
+func isStringFoundInOutput(searchStr, outputToSearchIn string) bool {
+	r := regexp.MustCompile("(?i)" + searchStr)
+	return r.MatchString(outputToSearchIn)
 }

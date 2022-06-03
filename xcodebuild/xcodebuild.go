@@ -1,8 +1,11 @@
 package xcodebuild
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -38,29 +41,88 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun, destination string, opts ...s
 		return "", err
 	}
 
+	logFile, err := x.createXcodebuildLogFile()
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if err := logFile.Close(); err != nil {
+			x.logger.Warnf("Failed to open xcodebuild log file: %s", err)
+		}
+	}()
+
+	outputWriter := io.MultiWriter(os.Stdout, logFile)
+
 	options := []string{"test-without-building", "-xctestrun", xctestrun, "-destination", destination, "-resultBundlePath", outputDir}
 	options = append(options, opts...)
 
 	cmd := x.commandFactory.Create("xcodebuild", options, &command.Opts{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Stdout: outputWriter,
+		Stderr: outputWriter,
 	})
 
 	x.logger.TDonef(cmd.PrintableCommandArgs())
-	err = cmd.Run()
+	xcodebuildErr := cmd.Run()
 
-	if exist, _ := x.pathChecker.IsPathExists(outputDir); !exist {
+	empty, err := isDirEmpty(outputDir)
+	if err != nil {
+		x.logger.Warnf("Failed to check if test result bundle is empty: %s", err)
+	}
+	if empty {
 		outputDir = ""
 	}
-	return outputDir, err
+
+	if xcodebuildErr != nil {
+		var exerr *exec.ExitError
+		if errors.As(xcodebuildErr, &exerr) {
+			log, err := io.ReadAll(logFile)
+			if err != nil {
+				x.logger.Warnf("Failed to open xcodebuild log file: %s", err)
+			}
+
+			return outputDir, XcodebuildError{
+				Reason: fmt.Sprintf("failing tests (exist status %v)", exerr.ExitCode()),
+				Err:    xcodebuildErr,
+				Log:    string(log),
+			}
+		}
+
+		return outputDir, fmt.Errorf("test execute failed: %w", xcodebuildErr)
+	}
+
+	return outputDir, nil
+}
+
+func (x xcodebuild) createXcodebuildLogFile() (*os.File, error) {
+	tempDir, err := x.pathProvider.CreateTempDir("xcodebuild")
+	if err != nil {
+		return nil, err
+	}
+
+	return os.Create(path.Join(tempDir, "test-without-building.log"))
 }
 
 func (x xcodebuild) createTestOutputDir(xctestrun string) (string, error) {
 	tempDir, err := x.pathProvider.CreateTempDir("XCUITestOutput")
 	if err != nil {
-		return "", fmt.Errorf("could not create test output temporary directory: %w", err)
+		return "", err
 	}
 
 	fileName := strings.TrimSuffix(filepath.Base(xctestrun), filepath.Ext(xctestrun))
 	return path.Join(tempDir, fmt.Sprintf("Test-%s.xcresult", fileName)), nil
+}
+
+func isDirEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdir(1)
+
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
 }
