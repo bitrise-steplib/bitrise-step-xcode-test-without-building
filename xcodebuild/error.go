@@ -6,6 +6,6 @@ type XcodebuildError struct {
 	Log    string
 }
 
-func (err XcodebuildError) Error() string {
+func (err *XcodebuildError) Error() string {
 	return err.Reason
 }

@@ -99,7 +99,7 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun, destination, testRepetitionMo
 				x.logger.Warnf("Failed to open xcodebuild log file: %s", err)
 			}
 
-			return outputDir, XcodebuildError{
+			return outputDir, &XcodebuildError{
 				Reason: fmt.Sprintf("failing tests (exist status %v)", exerr.ExitCode()),
 				Err:    xcodebuildErr,
 				Log:    string(log),

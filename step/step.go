@@ -120,10 +120,6 @@ func (s Step) ProcessConfig() (*Config, error) {
 	}, nil
 }
 
-func (s Step) InstallDependencies() error {
-	return nil
-}
-
 func (s Step) Run(config Config) (*Result, error) {
 	s.logger.Println()
 	s.logger.Infof("Running tests:")
