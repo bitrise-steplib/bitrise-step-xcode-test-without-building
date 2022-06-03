@@ -1,0 +1,34 @@
+format_version: "11"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+workflows:
+  test_test_plans:
+    envs:
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-swift-project-with-parallel-ui-test.git
+    - TEST_APP_BRANCH: master
+    - BITRISE_PROJECT_PATH: ./_tmp/BullsEye.xcworkspace
+    - BITRISE_SCHEME: BullsEye
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+            rm -rf "./_tmp"
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git:
+        inputs:
+        - repository_url: $TEST_APP_URL
+        - branch: $TEST_APP_BRANCH
+        - clone_into_dir: ./_tmp
+    - git::https://github.com/bitrise-steplib/steps-xcode-build-for-test.git@test_plan_output_export:
+        inputs:
+        - project_path: $BITRISE_PROJECT_PATH
+        - scheme: $BITRISE_SCHEME
+        - xcodebuild_options: -testPlan FullTests
+        - destination: generic/platform=iOS Simulator
+    - path::./:
+        title: Step Test
+        inputs:
+        - xctestrun: $BITRISE_XCTESTRUN_FILE_PATH
+        - destination: platform=iOS Simulator,name=iPhone 12 Pro Max
+        - xcodebuild_options: -parallel-testing-enabled YES
