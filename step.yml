@@ -68,7 +68,7 @@ inputs:
     - retry_on_failure
     - up_until_maximum_repetitions
 
-- maximum_test_repetitions: 3
+- maximum_test_repetitions: "3"
   opts:
     category: Test Repetition
     title: Maximum Test Repetitions (Available in Xcode 13+)

@@ -14,8 +14,8 @@ import (
 )
 
 type OutputExporter interface {
-	ZipAndExportOutput(artifact string, destinationZipPth, envKey string) error
-	CopyAndSaveTestData(sourceTestOutputDir, targetAddonPath, targetAddonBundleName string) error
+	ZipAndExportOutput(artifact, destinationZipPth, envKey string) error
+	CopyAndSaveTestData(artifact, targetAddonPath, testName string) error
 }
 
 type outputExporter struct {
@@ -25,18 +25,18 @@ func NewOutputExporter() OutputExporter {
 	return outputExporter{}
 }
 
-func (e outputExporter) ZipAndExportOutput(artifact string, destinationZipPth, envKey string) error {
+func (e outputExporter) ZipAndExportOutput(artifact, destinationZipPth, envKey string) error {
 	return output.ZipAndExportOutput([]string{artifact}, destinationZipPth, envKey)
 }
 
-func (e outputExporter) CopyAndSaveTestData(sourceTestOutputDir, targetAddonPath, targetAddonBundleName string) error {
-	targetAddonBundleName = replaceUnsupportedFilenameCharacters(targetAddonBundleName)
-	addonPerStepOutputDir := filepath.Join(targetAddonPath, targetAddonBundleName)
+func (e outputExporter) CopyAndSaveTestData(artifact, targetAddonPath, testName string) error {
+	testName = replaceUnsupportedFilenameCharacters(testName)
+	addonPerStepOutputDir := filepath.Join(targetAddonPath, testName)
 
-	if err := copyDirectory(sourceTestOutputDir, addonPerStepOutputDir); err != nil {
+	if err := copyDirectory(artifact, addonPerStepOutputDir); err != nil {
 		return err
 	}
-	if err := saveBundleMetadata(addonPerStepOutputDir, targetAddonBundleName); err != nil {
+	if err := saveBundleMetadata(addonPerStepOutputDir, testName); err != nil {
 		return err
 	}
 	return nil

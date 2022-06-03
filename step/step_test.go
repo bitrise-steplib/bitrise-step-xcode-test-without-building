@@ -63,6 +63,54 @@ func Test_GivenStep_WhenXcodebuildFailsOnAutomaticRetryReason_ThenXcodebuildComm
 	testingMocks.xcodebuild.AssertNumberOfCalls(t, "TestWithoutBuilding", 2)
 }
 
+func Test_GivenDeployDir_WhenStepExportsOutputs_ThenTestResultMovedToDeployDir(t *testing.T) {
+	// Given
+	step, testingMocks := createStepAndMocks()
+
+	testingMocks.logger.On("Println").Return()
+	testingMocks.logger.On("Infof", mock.Anything).Return()
+	testingMocks.logger.On("Donef", mock.Anything, mock.Anything, mock.Anything).Return()
+	testingMocks.envRepository.On("Set", mock.Anything, mock.Anything).Return(nil)
+
+	result := Result{
+		TestOutputDir: "my_test.xcresult",
+		DeployDir:     "deploy_dir",
+	}
+
+	testingMocks.outputExporter.On("ZipAndExportOutput", result.TestOutputDir, mock.Anything, mock.Anything).Return(nil)
+
+	// When
+	err := step.ExportOutputs(result)
+
+	// Then
+	require.NoError(t, err)
+	testingMocks.outputExporter.AssertExpectations(t)
+}
+
+func Test_GivenTestingAddonDir_WhenStepExportsOutputs_ThenTestResultMovedToTestingAddonDir(t *testing.T) {
+	// Given
+	step, testingMocks := createStepAndMocks()
+
+	testingMocks.logger.On("Println").Return()
+	testingMocks.logger.On("Infof", mock.Anything).Return()
+	testingMocks.logger.On("Donef", mock.Anything, mock.Anything, mock.Anything).Return()
+	testingMocks.envRepository.On("Set", mock.Anything, mock.Anything).Return(nil)
+
+	result := Result{
+		TestOutputDir:   "my_test.xcresult",
+		TestingAddonDir: "testing_addon_dir",
+	}
+
+	testingMocks.outputExporter.On("CopyAndSaveTestData", result.TestOutputDir, mock.Anything, mock.Anything).Return(nil)
+
+	// When
+	err := step.ExportOutputs(result)
+
+	// Then
+	require.NoError(t, err)
+	testingMocks.outputExporter.AssertExpectations(t)
+}
+
 type testingMocks struct {
 	envRepository  *mocks.Repository
 	inputParser    stepconf.InputParser
