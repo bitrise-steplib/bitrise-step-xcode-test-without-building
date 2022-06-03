@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -15,8 +16,14 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
+const (
+	TestRepetitionNone           = "none"
+	TestRepetitionUntilFailure   = "until_failure"
+	TestRepetitionRetryOnFailure = "retry_on_failure"
+)
+
 type Xcodebuild interface {
-	TestWithoutBuilding(xctestrun, destination string, options ...string) (string, error)
+	TestWithoutBuilding(xctestrun, destination, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, options ...string) (string, error)
 }
 
 type xcodebuild struct {
@@ -35,7 +42,7 @@ func New(logger log.Logger, commandFactory command.Factory, pathProvider pathuti
 	}
 }
 
-func (x xcodebuild) TestWithoutBuilding(xctestrun, destination string, opts ...string) (string, error) {
+func (x xcodebuild) TestWithoutBuilding(xctestrun, destination, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, opts ...string) (string, error) {
 	outputDir, err := x.createTestOutputDir(xctestrun)
 	if err != nil {
 		return "", err
@@ -54,6 +61,18 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun, destination string, opts ...s
 	outputWriter := io.MultiWriter(os.Stdout, logFile)
 
 	options := []string{"test-without-building", "-xctestrun", xctestrun, "-destination", destination, "-resultBundlePath", outputDir}
+	switch testRepetitionMode {
+	case TestRepetitionUntilFailure:
+		options = append(options, "-run-tests-until-failure")
+	case TestRepetitionRetryOnFailure:
+		options = append(options, "-retry-tests-on-failure")
+	}
+	if testRepetitionMode != TestRepetitionNone {
+		options = append(options, "-test-iterations", strconv.Itoa(maximumTestRepetitions))
+	}
+	if relaunchTestsForEachRepetition {
+		options = append(options, "-test-repetition-relaunch-enabled", "YES")
+	}
 	options = append(options, opts...)
 
 	cmd := x.commandFactory.Create("xcodebuild", options, &command.Opts{

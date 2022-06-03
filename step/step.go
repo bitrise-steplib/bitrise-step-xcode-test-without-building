@@ -51,16 +51,24 @@ type Input struct {
 	Xctestrun         string `env:"xctestrun,required"`
 	Destination       string `env:"destination,required"`
 	XcodebuildOptions string `env:"xcodebuild_options"`
-	DeployDir         string `env:"BITRISE_DEPLOY_DIR"`
-	TestingAddonDir   string `env:"BITRISE_TEST_RESULT_DIR"`
+
+	TestRepetitionMode             string `env:"test_repetition_mode,opt[none,until_failure,retry_on_failure,up_until_maximum_repetitions]"`
+	MaximumTestRepetitions         int    `env:"maximum_test_repetitions,required"`
+	RelaunchTestsForEachRepetition bool   `env:"relaunch_tests_for_each_repetition,opt[yes,no]"`
+
+	DeployDir       string `env:"BITRISE_DEPLOY_DIR"`
+	TestingAddonDir string `env:"BITRISE_TEST_RESULT_DIR"`
 }
 
 type Config struct {
-	Xctestrun         string
-	Destination       string
-	XcodebuildOptions []string
-	DeployDir         string
-	TestingAddonDir   string
+	Xctestrun                      string
+	Destination                    string
+	XcodebuildOptions              []string
+	TestRepetitionMode             string
+	MaximumTestRepetitions         int
+	RelaunchTestsForEachRepetition bool
+	DeployDir                      string
+	TestingAddonDir                string
 }
 
 type Result struct {
@@ -101,11 +109,14 @@ func (s Step) ProcessConfig() (*Config, error) {
 	}
 
 	return &Config{
-		Xctestrun:         input.Xctestrun,
-		Destination:       input.Destination,
-		XcodebuildOptions: xcodebuildOptions,
-		DeployDir:         input.DeployDir,
-		TestingAddonDir:   input.TestingAddonDir,
+		Xctestrun:                      input.Xctestrun,
+		Destination:                    input.Destination,
+		XcodebuildOptions:              xcodebuildOptions,
+		TestRepetitionMode:             input.TestRepetitionMode,
+		MaximumTestRepetitions:         input.MaximumTestRepetitions,
+		RelaunchTestsForEachRepetition: input.RelaunchTestsForEachRepetition,
+		DeployDir:                      input.DeployDir,
+		TestingAddonDir:                input.TestingAddonDir,
 	}, nil
 }
 
@@ -122,14 +133,14 @@ func (s Step) Run(config Config) (*Result, error) {
 		TestingAddonDir: config.TestingAddonDir,
 	}
 
-	outputDir, err := s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.XcodebuildOptions...)
+	outputDir, err := s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.TestRepetitionMode, config.MaximumTestRepetitions, config.RelaunchTestsForEachRepetition, config.XcodebuildOptions...)
 	if err != nil {
 		var xcErr *xcodebuild.XcodebuildError
 		if errors.As(err, &xcErr) {
 			for _, errorPattern := range testRunnerErrorPatterns {
 				if isStringFoundInOutput(errorPattern, xcErr.Log) {
 					s.logger.Warnf("Automatic retry reason found in log: %s", errorPattern)
-					outputDir, err = s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.XcodebuildOptions...)
+					outputDir, err = s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.TestRepetitionMode, config.MaximumTestRepetitions, config.RelaunchTestsForEachRepetition, config.XcodebuildOptions...)
 				}
 			}
 		}

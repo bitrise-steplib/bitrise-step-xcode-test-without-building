@@ -35,18 +35,74 @@ inputs:
     summary: Test run parameters file, generated during the build-for-testing action.
     is_required: true
 
-- destination:
+- destination: platform=iOS Simulator,name=iPhone 8 Plus,OS=latest
   opts:
-    title: Destination specifier
-    summary: Destination specifier describing the device (or devices) to use as a destination.
+    title: Device destination specifier
+    summary: Destination specifier describes the device to use as a destination.
+    description: |-
+      Destination specifier describes the device to use as a destination.
+
+      The input value sets xcodebuild's `-destination` option.
     is_required: true
 
-- xcodebuild_options:
+# Test Repetition
+
+- test_repetition_mode: none
   opts:
+    category: Test Repetition
+    title: Test Repetition Mode (Available in Xcode 13+)
+    summary: Determines how the tests will repeat.
+    description: |-
+      Determines how the tests will repeat.
+
+      Available options:
+      - `none`: Tests will never repeat.
+      - `until_failure`: Tests will repeat until failure or up to maximum repetitions.
+      - `retry_on_failure`: Only failed tests will repeat up to maximum repetitions.
+      - `up_until_maximum_repetitions`: Tests will repeat up until maximum repetitions.
+
+      The input value together with Maximum Test Repetitions (`maximum_test_repetitions`) input sets xcodebuild's `-run-tests-until-failure` / `-retry-tests-on-failure` or `-test-iterations` option.
+    value_options:
+    - none
+    - until_failure
+    - retry_on_failure
+    - up_until_maximum_repetitions
+
+- maximum_test_repetitions: 3
+  opts:
+    category: Test Repetition
+    title: Maximum Test Repetitions (Available in Xcode 13+)
+    summary: The maximum number of times a test repeats based on the Test Repetition Mode (`test_repetition_mode`).
+    description: |-
+      The maximum number of times a test repeats based on the Test Repetition Mode (`test_repetition_mode`).
+
+      Should be more than 1 if the Test Repetition Mode is other than `none`.
+
+      The input value sets xcodebuild's `-test-iterations` option.
+    is_required: true
+
+- relaunch_tests_for_each_repetition: "no"
+  opts:
+    title: Relaunch Tests for Each Repetition (Available in Xcode 13+)
+    category: Test Repetition
+    summary: If this input is set, tests will launch in a new process for each repetition.
+    description: |-
+      If this input is set, tests will launch in a new process for each repetition.
+
+      By default, tests launch in the same process for each repetition.
+
+      The input value sets xcodebuild's `-test-repetition-relaunch-enabled` option.
+    value_options:
+    - "yes"
+    - "no"
+
+# xcodebuild configuration
+
+- xcodebuild_options: ""
+  opts:
+    category: xcodebuild configuration
     title: Additional options for the xcodebuild command
     summary: Additional options to be added to the executed xcodebuild command.
-    description: |-
-      Additional options to be added to the executed xcodebuild command.
 
 outputs:
 
