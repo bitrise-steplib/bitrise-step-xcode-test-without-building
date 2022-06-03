@@ -13,6 +13,12 @@ is_always_run: false
 is_skippable: false
 run_if: ""
 
+project_type_tags:
+- ios
+- react-native
+- cordova
+- ionic
+
 deps:
   check_only:
   - name: xcode
