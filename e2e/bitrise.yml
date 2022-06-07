@@ -32,3 +32,9 @@ workflows:
         - xctestrun: $BITRISE_XCTESTRUN_FILE_PATH
         - destination: platform=iOS Simulator,name=iPhone 12 Pro Max
         - xcodebuild_options: -parallel-testing-enabled YES
+    - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
+        is_always_run: true
+        inputs:
+        - dirs: BITRISE_XCRESULT_PATH
+        - deploy_dir: $BITRISE_DEPLOY_DIR
+        - deployed_files: BITRISE_XCRESULT_ZIP_PATH
