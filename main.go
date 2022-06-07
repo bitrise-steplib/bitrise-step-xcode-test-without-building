@@ -21,22 +21,22 @@ func run() int {
 	exitCode := 0
 
 	logger := log.NewLogger()
-	step := createStep(logger)
+	xcodebuildTest := createXcodebuildTest(logger)
 
-	config, err := step.ProcessConfig()
+	config, err := xcodebuildTest.ProcessConfig()
 	if err != nil {
 		logger.Errorf(err.Error())
 		exitCode = 1
 		return exitCode
 	}
 
-	result, err := step.Run(*config)
+	result, err := xcodebuildTest.Run(*config)
 	if err != nil {
 		logger.TErrorf(err.Error())
 		exitCode = 1
 	}
 
-	if err = step.ExportOutputs(*result); err != nil {
+	if err = xcodebuildTest.ExportOutputs(*result); err != nil {
 		logger.Errorf(err.Error())
 		exitCode = 1
 	}
@@ -44,7 +44,7 @@ func run() int {
 	return exitCode
 }
 
-func createStep(logger log.Logger) step.Step {
+func createXcodebuildTest(logger log.Logger) step.XcodebuildTest {
 	osEnvs := env.NewRepository()
 	inputParser := stepconf.NewInputParser(osEnvs)
 	outputEnvStore := stepenv.NewRepository(osEnvs)
@@ -54,5 +54,5 @@ func createStep(logger log.Logger) step.Step {
 	xcodebuild := xcodebuild.New(logger, commandFactory, pathProvider, pathChecker)
 	outputExporter := step.NewOutputExporter()
 
-	return step.New(logger, inputParser, xcodebuild, outputEnvStore, outputExporter)
+	return step.NewXcodebuildTest(logger, inputParser, xcodebuild, outputEnvStore, outputExporter)
 }

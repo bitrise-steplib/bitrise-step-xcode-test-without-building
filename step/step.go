@@ -77,7 +77,7 @@ type Result struct {
 	TestingAddonDir string
 }
 
-type Step struct {
+type XcodebuildTest struct {
 	logger         log.Logger
 	inputParser    stepconf.InputParser
 	xcodebuild     xcodebuild.Xcodebuild
@@ -85,8 +85,8 @@ type Step struct {
 	outputExporter OutputExporter
 }
 
-func New(logger log.Logger, inputParser stepconf.InputParser, xcodebuild xcodebuild.Xcodebuild, outputEnvStore env.Repository, outputExporter OutputExporter) Step {
-	return Step{
+func NewXcodebuildTest(logger log.Logger, inputParser stepconf.InputParser, xcodebuild xcodebuild.Xcodebuild, outputEnvStore env.Repository, outputExporter OutputExporter) XcodebuildTest {
+	return XcodebuildTest{
 		logger:         logger,
 		inputParser:    inputParser,
 		xcodebuild:     xcodebuild,
@@ -95,7 +95,7 @@ func New(logger log.Logger, inputParser stepconf.InputParser, xcodebuild xcodebu
 	}
 }
 
-func (s Step) ProcessConfig() (*Config, error) {
+func (s XcodebuildTest) ProcessConfig() (*Config, error) {
 	var input Input
 	if err := s.inputParser.Parse(&input); err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (s Step) ProcessConfig() (*Config, error) {
 	}, nil
 }
 
-func (s Step) Run(config Config) (*Result, error) {
+func (s XcodebuildTest) Run(config Config) (*Result, error) {
 	s.logger.Println()
 	s.logger.Infof("Running tests:")
 
@@ -151,7 +151,7 @@ func (s Step) Run(config Config) (*Result, error) {
 	return result, err
 }
 
-func (s Step) ExportOutputs(result Result) error {
+func (s XcodebuildTest) ExportOutputs(result Result) error {
 	s.logger.Println()
 	s.logger.Infof("Exporting outputs:")
 

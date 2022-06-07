@@ -119,13 +119,13 @@ type testingMocks struct {
 	outputExporter *mocks.OutputExporter
 }
 
-func createStepAndMocks() (Step, testingMocks) {
+func createStepAndMocks() (XcodebuildTest, testingMocks) {
 	envRepository := new(mocks.Repository)
 	inputParser := stepconf.NewInputParser(envRepository)
 	logger := new(mocks.Logger)
 	xcodebuild := new(mocks.Xcodebuild)
 	outputExporter := new(mocks.OutputExporter)
-	step := New(logger, inputParser, xcodebuild, envRepository, outputExporter)
+	step := NewXcodebuildTest(logger, inputParser, xcodebuild, envRepository, outputExporter)
 
 	mocks := testingMocks{
 		envRepository:  envRepository,
