@@ -18,16 +18,18 @@ func main() {
 }
 
 func run() int {
+	exitCode := 0
+
 	logger := log.NewLogger()
 	step := createStep(logger)
 
 	config, err := step.ProcessConfig()
 	if err != nil {
 		logger.Errorf(err.Error())
-		return 1
+		exitCode = 1
+		return exitCode
 	}
 
-	exitCode := 0
 	result, err := step.Run(*config)
 	if err != nil {
 		logger.TErrorf(err.Error())
