@@ -13,7 +13,7 @@ workflows:
         inputs:
         - content: |-
             #!/bin/env bash
-            set -ex
+            set -xeo pipefail
             rm -rf "./_tmp"
     - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git:
         inputs:
