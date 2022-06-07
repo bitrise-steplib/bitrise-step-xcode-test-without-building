@@ -82,7 +82,7 @@ func (x xcodebuild) createXcodebuildLogFile() (*os.File, error) {
 }
 
 func (x xcodebuild) createTestOutputDir(xctestrun string) (string, error) {
-	tempDir, err := x.pathProvider.CreateTempDir("XCUITestOutput")
+	tempDir, err := x.pathProvider.CreateTempDir("TestOutput")
 	if err != nil {
 		return "", err
 	}

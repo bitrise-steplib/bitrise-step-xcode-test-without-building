@@ -42,7 +42,7 @@ func (e outputExporter) CopyAndSaveTestData(artifact, targetAddonPath, testName 
 	return nil
 }
 
-// Replaces characters '/' and ':', which are unsupported in filnenames on macOS
+// Replaces characters '/' and ':', which are unsupported in filenames on macOS
 func replaceUnsupportedFilenameCharacters(s string) string {
 	s = strings.Replace(s, "/", "-", -1)
 	s = strings.Replace(s, ":", "-", -1)
