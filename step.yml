@@ -25,7 +25,7 @@ toolkit:
 
 inputs:
 
-- xctestrun:
+- xctestrun: $BITRISE_XCTESTRUN_FILE_PATH
   opts:
     title: xctestrun file path
     summary: Test run parameters file, generated during the build-for-testing action.
