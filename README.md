@@ -23,7 +23,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 | Key | Description | Flags | Default |
 | --- | --- | --- | --- |
-| `xctestrun` | Test run parameters file, generated during the build-for-testing action. | required |  |
+| `xctestrun` | Test run parameters file, generated during the build-for-testing action. | required | `$BITRISE_XCTESTRUN_FILE_PATH` |
 | `destination` | Destination specifier describes the device to use as a destination.  The input value sets xcodebuild's `-destination` option. | required | `platform=iOS Simulator,name=iPhone 8 Plus,OS=latest` |
 | `test_repetition_mode` | Determines how the tests will repeat.  Available options: - `none`: Tests will never repeat. - `until_failure`: Tests will repeat until failure or up to maximum repetitions. - `retry_on_failure`: Only failed tests will repeat up to maximum repetitions. - `up_until_maximum_repetitions`: Tests will repeat up until maximum repetitions.  The input value together with Maximum Test Repetitions (`maximum_test_repetitions`) input sets xcodebuild's `-run-tests-until-failure` / `-retry-tests-on-failure` or `-test-iterations` option. |  | `none` |
 | `maximum_test_repetitions` | The maximum number of times a test repeats based on the Test Repetition Mode (`test_repetition_mode`).  Should be more than 1 if the Test Repetition Mode is other than `none`.  The input value sets xcodebuild's `-test-iterations` option. | required | `3` |
