@@ -61,7 +61,7 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun, destination, testRepetitionMo
 		return "", err
 	}
 
-	options := createXcodebuildOptions(xctestrun, destination, testRepetitionMode, maximumTestRepetitions, relaunchTestsForEachRepetition, outputDir, opts)
+	options := createXcodebuildOptions(xctestrun, destination, testRepetitionMode, maximumTestRepetitions, relaunchTestsForEachRepetition, outputDir, opts...)
 	cmd := x.commandFactory.Create("xcodebuild", options, &command.Opts{
 		Stdout: outputWriter,
 		Stderr: outputWriter,
