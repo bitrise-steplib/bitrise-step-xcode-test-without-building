@@ -15,10 +15,6 @@ project_type_tags:
 - cordova
 - ionic
 
-deps:
-  check_only:
-  - name: xcode
-
 toolkit:
   go:
     package_name: github.com/bitrise-steplib/bitrise-step-xcode-test-without-building
