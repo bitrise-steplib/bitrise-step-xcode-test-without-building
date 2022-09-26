@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/destination"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
 	"github.com/kballard/go-shellquote"
 )
@@ -62,7 +63,7 @@ type Input struct {
 
 type Config struct {
 	Xctestrun                      string
-	Destination                    string
+	Destination                    destination.Device
 	XcodebuildOptions              []string
 	TestRepetitionMode             string
 	MaximumTestRepetitions         int
@@ -80,15 +81,17 @@ type Result struct {
 type XcodebuildTester struct {
 	logger         log.Logger
 	inputParser    stepconf.InputParser
+	deviceFinder   destination.DeviceFinder
 	xcodebuild     xcodebuild.Xcodebuild
 	outputEnvStore env.Repository
 	outputExporter OutputExporter
 }
 
-func NewXcodebuildTester(logger log.Logger, inputParser stepconf.InputParser, xcodebuild xcodebuild.Xcodebuild, outputEnvStore env.Repository, outputExporter OutputExporter) XcodebuildTester {
+func NewXcodebuildTester(logger log.Logger, inputParser stepconf.InputParser, deviceFinder destination.DeviceFinder, xcodebuild xcodebuild.Xcodebuild, outputEnvStore env.Repository, outputExporter OutputExporter) XcodebuildTester {
 	return XcodebuildTester{
 		logger:         logger,
 		inputParser:    inputParser,
+		deviceFinder:   deviceFinder,
 		xcodebuild:     xcodebuild,
 		outputEnvStore: outputEnvStore,
 		outputExporter: outputExporter,
@@ -108,9 +111,14 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 		return nil, fmt.Errorf("provided xcodebuild options (%s) are not valid CLI parameters: %w", input.XcodebuildOptions, err)
 	}
 
+	destinationDevice, err := s.getSimulatorForDestination(input.Destination)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
 		Xctestrun:                      input.Xctestrun,
-		Destination:                    input.Destination,
+		Destination:                    destinationDevice,
 		XcodebuildOptions:              xcodebuildOptions,
 		TestRepetitionMode:             input.TestRepetitionMode,
 		MaximumTestRepetitions:         input.MaximumTestRepetitions,
@@ -182,6 +190,24 @@ func (s XcodebuildTester) ExportOutputs(result Result) error {
 		}
 	}
 	return nil
+}
+
+func (s XcodebuildTester) getSimulatorForDestination(destinationSpecifier string) (destination.Device, error) {
+	simulatorDestination, err := destination.NewSimulator(destinationSpecifier)
+	if err != nil {
+		return destination.Device{}, fmt.Errorf("invalid destination specifier (%s): %w", destinationSpecifier, err)
+	}
+
+	s.logger.Println()
+	device, err := s.deviceFinder.FindDevice(*simulatorDestination)
+	if err != nil {
+		return destination.Device{}, fmt.Errorf("simulator UDID lookup failed: %w", err)
+	}
+
+	s.logger.Infof("Simulator info")
+	s.logger.Printf("* name: %s, version: %s, UDID: %s, status: %s", device.Name, device.OS, device.ID, device.Status)
+
+	return device, nil
 }
 
 func isStringFoundInOutput(searchStr, outputToSearchIn string) bool {
