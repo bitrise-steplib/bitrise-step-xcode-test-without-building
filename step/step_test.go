@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/destination"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/mocks"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
 	"github.com/stretchr/testify/mock"
@@ -12,7 +14,7 @@ import (
 
 func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) {
 	// Given
-	step, testingMocks := createStepAndMocks()
+	step, testingMocks := createStepAndMocks(t)
 
 	inputs := map[string]string{
 		"xctestrun":                          "my_test.xctestrun",
@@ -25,7 +27,11 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 	for key, value := range inputs {
 		testingMocks.envRepository.On("Get", key).Return(value)
 	}
+
 	testingMocks.envRepository.On("Get", mock.Anything).Return("")
+	testingMocks.deviceFinder.On("FindDevice", mock.Anything, mock.Anything).Return(destination.Device{
+		ID: "test-UDID",
+	}, nil)
 
 	// When
 	config, err := step.ProcessConfig()
@@ -37,7 +43,7 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 
 func Test_GivenStep_WhenXcodebuildFailsOnAutomaticRetryReason_ThenXcodebuildCommandRetried(t *testing.T) {
 	// Given
-	step, testingMocks := createStepAndMocks()
+	step, testingMocks := createStepAndMocks(t)
 
 	testingMocks.xcodebuild.On("TestWithoutBuilding", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", &xcodebuild.XcodebuildError{Log: "Test runner never began executing tests after launching."})
 	testingMocks.logger.On("Println").Return()
@@ -46,7 +52,7 @@ func Test_GivenStep_WhenXcodebuildFailsOnAutomaticRetryReason_ThenXcodebuildComm
 
 	config := Config{
 		Xctestrun:                      "",
-		Destination:                    "",
+		Destination:                    destination.Device{ID: "test-UDID"},
 		XcodebuildOptions:              nil,
 		TestRepetitionMode:             "",
 		MaximumTestRepetitions:         0,
@@ -65,7 +71,7 @@ func Test_GivenStep_WhenXcodebuildFailsOnAutomaticRetryReason_ThenXcodebuildComm
 
 func Test_GivenDeployDir_WhenStepExportsOutputs_ThenTestResultMovedToDeployDir(t *testing.T) {
 	// Given
-	step, testingMocks := createStepAndMocks()
+	step, testingMocks := createStepAndMocks(t)
 
 	testingMocks.logger.On("Println").Return()
 	testingMocks.logger.On("Infof", mock.Anything).Return()
@@ -89,7 +95,7 @@ func Test_GivenDeployDir_WhenStepExportsOutputs_ThenTestResultMovedToDeployDir(t
 
 func Test_GivenTestingAddonDir_WhenStepExportsOutputs_ThenTestResultMovedToTestingAddonDir(t *testing.T) {
 	// Given
-	step, testingMocks := createStepAndMocks()
+	step, testingMocks := createStepAndMocks(t)
 
 	testingMocks.logger.On("Println").Return()
 	testingMocks.logger.On("Infof", mock.Anything).Return()
@@ -115,22 +121,25 @@ type testingMocks struct {
 	envRepository  *mocks.Repository
 	inputParser    stepconf.InputParser
 	logger         *mocks.Logger
+	deviceFinder   *mocks.DeviceFinder
 	xcodebuild     *mocks.Xcodebuild
 	outputExporter *mocks.OutputExporter
 }
 
-func createStepAndMocks() (XcodebuildTester, testingMocks) {
+func createStepAndMocks(t *testing.T) (XcodebuildTester, testingMocks) {
 	envRepository := new(mocks.Repository)
 	inputParser := stepconf.NewInputParser(envRepository)
 	logger := new(mocks.Logger)
+	deviceFinder := mocks.NewDeviceFinder(t)
 	xcodebuild := new(mocks.Xcodebuild)
 	outputExporter := new(mocks.OutputExporter)
-	step := NewXcodebuildTester(logger, inputParser, xcodebuild, envRepository, outputExporter)
+	step := NewXcodebuildTester(log.NewLogger(), inputParser, deviceFinder, xcodebuild, envRepository, outputExporter)
 
 	mocks := testingMocks{
 		envRepository:  envRepository,
 		inputParser:    inputParser,
 		logger:         logger,
+		deviceFinder:   deviceFinder,
 		xcodebuild:     xcodebuild,
 		outputExporter: outputExporter,
 	}
