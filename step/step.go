@@ -111,14 +111,17 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 		return nil, fmt.Errorf("provided xcodebuild options (%s) are not valid CLI parameters: %w", input.XcodebuildOptions, err)
 	}
 
-	destinationDevice, err := s.getSimulatorForDestination(input.Destination)
+	destination, err := s.getSimulatorForDestination(input.Destination)
 	if err != nil {
 		return nil, err
 	}
 
+	s.logger.Infof("Simulator device:")
+	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", destination.Name, destination.OS, destination.ID, destination.Status)
+
 	return &Config{
 		Xctestrun:                      input.Xctestrun,
-		Destination:                    destinationDevice,
+		Destination:                    destination,
 		XcodebuildOptions:              xcodebuildOptions,
 		TestRepetitionMode:             input.TestRepetitionMode,
 		MaximumTestRepetitions:         input.MaximumTestRepetitions,
@@ -203,9 +206,6 @@ func (s XcodebuildTester) getSimulatorForDestination(destinationSpecifier string
 	if err != nil {
 		return destination.Device{}, fmt.Errorf("simulator UDID lookup failed: %w", err)
 	}
-
-	s.logger.Infof("Simulator info")
-	s.logger.Printf("* name: %s, version: %s, UDID: %s, status: %s", device.Name, device.OS, device.ID, device.Status)
 
 	return device, nil
 }
