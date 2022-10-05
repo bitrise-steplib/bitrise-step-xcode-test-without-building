@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/destination"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/step"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
 )
@@ -51,8 +52,9 @@ func createXcodebuildTester(logger log.Logger) step.XcodebuildTester {
 	commandFactory := command.NewFactory(osEnvs)
 	pathProvider := pathutil.NewPathProvider()
 	pathChecker := pathutil.NewPathChecker()
+	deviceFinder := destination.NewDeviceFinder(logger, commandFactory)
 	xcbuild := xcodebuild.New(logger, commandFactory, pathProvider, pathChecker)
 	outputExporter := step.NewOutputExporter()
 
-	return step.NewXcodebuildTester(logger, inputParser, xcbuild, outputEnvStore, outputExporter)
+	return step.NewXcodebuildTester(logger, inputParser, deviceFinder, xcbuild, outputEnvStore, outputExporter)
 }
