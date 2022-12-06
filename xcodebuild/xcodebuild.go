@@ -120,7 +120,7 @@ func (x xcodebuild) handleError(xcodebuildErr error, outputDir string, logFile *
 			}
 
 			return outputDir, &XcodebuildError{
-				Reason: fmt.Sprintf("failing tests (exist status %v)", exerr.ExitCode()),
+				Reason: fmt.Sprintf("failing tests (exit status %v)", exerr.ExitCode()),
 				Err:    xcodebuildErr,
 				Log:    string(log),
 			}
