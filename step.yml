@@ -27,7 +27,7 @@ inputs:
     summary: Test run parameters file, generated during the build-for-testing action.
     is_required: true
 
-- destination: platform=iOS Simulator,name=iPhone 8 Plus,OS=latest
+- destination: platform=iOS Simulator,name=iPhone 11,OS=latest
   opts:
     title: Device destination specifier
     summary: Destination specifier describes the device to use as a destination.
