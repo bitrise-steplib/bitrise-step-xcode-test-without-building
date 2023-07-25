@@ -25,9 +25,10 @@ github.com/bitrise-io/go-utils/v2/env
 github.com/bitrise-io/go-utils/v2/log
 github.com/bitrise-io/go-utils/v2/log/colorstring
 github.com/bitrise-io/go-utils/v2/pathutil
-# github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.27
+# github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.27.0.20230725142740-cda8993be431
 ## explicit; go 1.16
 github.com/bitrise-io/go-xcode/v2/destination
+github.com/bitrise-io/go-xcode/v2/xcodeversion
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
