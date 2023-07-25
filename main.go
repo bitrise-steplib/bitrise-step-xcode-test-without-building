@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/destination"
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/step"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
 )
@@ -52,7 +53,12 @@ func createXcodebuildTester(logger log.Logger) step.XcodebuildTester {
 	commandFactory := command.NewFactory(osEnvs)
 	pathProvider := pathutil.NewPathProvider()
 	pathChecker := pathutil.NewPathChecker()
-	deviceFinder := destination.NewDeviceFinder(logger, commandFactory)
+	xcodeversionProvider := xcodeversion.NewXcodeVersionProvider(commandFactory)
+	xcodeVersion, err := xcodeversionProvider.GetVersion()
+	if err != nil {
+		logger.Errorf("failed to read Xcode version: %s", err) // not a fatal error, continuing
+	}
+	deviceFinder := destination.NewDeviceFinder(logger, commandFactory, xcodeVersion)
 	xcbuild := xcodebuild.New(logger, commandFactory, pathProvider, pathChecker)
 	outputExporter := step.NewOutputExporter()
 
