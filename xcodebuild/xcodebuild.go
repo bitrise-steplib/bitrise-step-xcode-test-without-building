@@ -63,7 +63,7 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun string, destination destinatio
 	}
 
 	var (
-		destinationParam = fmt.Sprintf("id=%s", destination.ID)
+		destinationParam = destination.XcodebuildDestination()
 		options          = createXcodebuildOptions(xctestrun, destinationParam, testRepetitionMode, maximumTestRepetitions, relaunchTestsForEachRepetition, outputDir, opts...)
 		cmd              = x.commandFactory.Create("xcodebuild", options, &command.Opts{
 			Stdout: outputWriter,
