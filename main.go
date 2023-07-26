@@ -55,8 +55,8 @@ func createXcodebuildTester(logger log.Logger) step.XcodebuildTester {
 	pathChecker := pathutil.NewPathChecker()
 	xcodeversionProvider := xcodeversion.NewXcodeVersionProvider(commandFactory)
 	xcodeVersion, err := xcodeversionProvider.GetVersion()
-	if err != nil {
-		logger.Errorf("failed to read Xcode version: %s", err) // not a fatal error, continuing
+	if err != nil { // not a fatal error, continuing with version left empty
+		logger.Errorf("failed to read Xcode version: %s", err)
 	}
 	deviceFinder := destination.NewDeviceFinder(logger, commandFactory, xcodeVersion)
 	xcbuild := xcodebuild.New(logger, commandFactory, pathProvider, pathChecker)
