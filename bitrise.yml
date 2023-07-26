@@ -40,7 +40,7 @@ workflows:
         title: Step Test
         inputs:
         - xctestrun: $BITRISE_XCTESTRUN_FILE_PATH
-        - destination: platform=iOS Simulator,name=iPhone 12 Pro Max
+        - destination: platform=iOS Simulator,name=Bitrise iOS default
         - xcodebuild_options: -parallel-testing-enabled YES
 
   generate_readme:
