@@ -17,6 +17,7 @@ const defaultDeviceName = "Bitrise iOS default"
 type Device struct {
 	ID     string
 	Status string
+	Type   string
 
 	Platform string
 	Name     string
@@ -58,7 +59,7 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 		d.list, err = d.parseDeviceList()
 	}
 	if err == nil {
-		device, err = d.filterDeviceList(destination)
+		device, err = d.deviceForDestination(destination)
 	}
 
 	d.logger.TDebugf("Parsed simulator list in %s", time.Since(start).Round(time.Second))
@@ -85,7 +86,7 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 		d.list, err = d.parseDeviceList()
 	}
 	if err == nil {
-		device, err = d.filterDeviceList(destination)
+		device, err = d.deviceForDestination(destination)
 	}
 
 	return device, err
