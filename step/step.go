@@ -150,14 +150,26 @@ func (s XcodebuildTester) Run(config Config) (*Result, error) {
 		TestingAddonDir: config.TestingAddonDir,
 	}
 
-	outputDir, err := s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.TestRepetitionMode, config.MaximumTestRepetitions, config.RelaunchTestsForEachRepetition, config.XcodebuildOptions...)
+	runTests := func() (string, error) {
+		return s.xcodebuild.TestWithoutBuilding(
+			config.Xctestrun,
+			config.OnlyTesting,
+			config.SkipTesting,
+			config.Destination,
+			config.TestRepetitionMode,
+			config.MaximumTestRepetitions,
+			config.RelaunchTestsForEachRepetition,
+			config.XcodebuildOptions...)
+	}
+
+	outputDir, err := runTests()
 	if err != nil {
 		var xcErr *xcodebuild.XcodebuildError
 		if errors.As(err, &xcErr) {
 			for _, errorPattern := range testRunnerErrorPatterns {
 				if isStringFoundInOutput(errorPattern, xcErr.Log) {
 					s.logger.Warnf("Automatic retry reason found in log: %s", errorPattern)
-					outputDir, err = s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.TestRepetitionMode, config.MaximumTestRepetitions, config.RelaunchTestsForEachRepetition, config.XcodebuildOptions...)
+					outputDir, err = runTests()
 				}
 			}
 		}
