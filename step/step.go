@@ -124,8 +124,15 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 	s.logger.Infof("Simulator device:")
 	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.ID, simulator.Status)
 
-	onlyTesting := strings.Split(input.OnlyTesting, "\n")
-	skipTesting := strings.Split(input.SkipTesting, "\n")
+	var onlyTesting []string
+	if input.OnlyTesting != "" {
+		onlyTesting = strings.Split(input.OnlyTesting, "\n")
+	}
+
+	var skipTesting []string
+	if input.SkipTesting != "" {
+		skipTesting = strings.Split(input.SkipTesting, "\n")
+	}
 
 	return &Config{
 		Xctestrun:                      input.Xctestrun,
