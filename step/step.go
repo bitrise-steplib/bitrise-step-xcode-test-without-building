@@ -59,6 +59,9 @@ type Input struct {
 
 	DeployDir       string `env:"BITRISE_DEPLOY_DIR"`
 	TestingAddonDir string `env:"BITRISE_TEST_RESULT_DIR"`
+
+	OnlyTesting string `env:"only_testing"`
+	SkipTesting string `env:"skip_testing"`
 }
 
 type Config struct {
@@ -70,6 +73,8 @@ type Config struct {
 	RelaunchTestsForEachRepetition bool
 	DeployDir                      string
 	TestingAddonDir                string
+	OnlyTesting                    []string
+	SkipTesting                    []string
 }
 
 type Result struct {
@@ -111,23 +116,28 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 		return nil, fmt.Errorf("provided xcodebuild options (%s) are not valid CLI parameters: %w", input.XcodebuildOptions, err)
 	}
 
-	destination, err := s.getSimulatorForDestination(input.Destination)
+	simulator, err := s.getSimulatorForDestination(input.Destination)
 	if err != nil {
 		return nil, err
 	}
 
 	s.logger.Infof("Simulator device:")
-	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", destination.Name, destination.OS, destination.ID, destination.Status)
+	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.ID, simulator.Status)
+
+	onlyTesting := strings.Split(input.OnlyTesting, "\n")
+	skipTesting := strings.Split(input.SkipTesting, "\n")
 
 	return &Config{
 		Xctestrun:                      input.Xctestrun,
-		Destination:                    destination,
+		Destination:                    simulator,
 		XcodebuildOptions:              xcodebuildOptions,
 		TestRepetitionMode:             input.TestRepetitionMode,
 		MaximumTestRepetitions:         input.MaximumTestRepetitions,
 		RelaunchTestsForEachRepetition: input.RelaunchTestsForEachRepetition,
 		DeployDir:                      input.DeployDir,
 		TestingAddonDir:                input.TestingAddonDir,
+		OnlyTesting:                    onlyTesting,
+		SkipTesting:                    skipTesting,
 	}, nil
 }
 
