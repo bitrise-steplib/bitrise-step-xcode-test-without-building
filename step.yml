@@ -41,6 +41,7 @@ inputs:
 
 - only_testing:
   opts:
+    category: Test Selection
     title: Test identifier list to execute
     summary: The step will execute only the listed tests.
     description: |-
@@ -53,8 +54,10 @@ inputs:
       - Test target, class and function name: `MyAppTests/MyAppTests/testExample`
 
       The input value can be a filepath as well which contains the list of tests separated by a newline character.
+
 - skip_testing:
   opts:
+    category: Test Selection
     title: Test identifier list to skip
     summary: The step will skip the listed tests during execution.
     description: |-
