@@ -52,6 +52,7 @@ inputs:
       - Test target and test class name: `MyAppTests/MyAppTests`
       - Test target, class and function name: `MyAppTests/MyAppTests/testExample`
 
+      The input value can be a filepath as well which contains the list of tests separated by a newline character.
 - skip_testing:
   opts:
     title: Test identifier list to skip
@@ -64,6 +65,8 @@ inputs:
       - Test target name only: `MyAppTests`
       - Test target and test class name: `MyAppTests/MyAppTests`
       - Test target, class and function name: `MyAppTests/MyAppTests/testExample`
+
+      The input value can be a filepath as well which contains the list of tests separated by a newline character.
 
 # Test Repetition
 

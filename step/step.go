@@ -3,6 +3,7 @@ package step
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/destination"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
 	"github.com/kballard/go-shellquote"
@@ -87,16 +89,26 @@ type XcodebuildTester struct {
 	logger         log.Logger
 	inputParser    stepconf.InputParser
 	deviceFinder   destination.DeviceFinder
+	pathChecker    pathutil.PathChecker
 	xcodebuild     xcodebuild.Xcodebuild
 	outputEnvStore env.Repository
 	outputExporter OutputExporter
 }
 
-func NewXcodebuildTester(logger log.Logger, inputParser stepconf.InputParser, deviceFinder destination.DeviceFinder, xcodebuild xcodebuild.Xcodebuild, outputEnvStore env.Repository, outputExporter OutputExporter) XcodebuildTester {
+func NewXcodebuildTester(
+	logger log.Logger,
+	inputParser stepconf.InputParser,
+	deviceFinder destination.DeviceFinder,
+	pathChecker pathutil.PathChecker,
+	xcodebuild xcodebuild.Xcodebuild,
+	outputEnvStore env.Repository,
+	outputExporter OutputExporter,
+) XcodebuildTester {
 	return XcodebuildTester{
 		logger:         logger,
 		inputParser:    inputParser,
 		deviceFinder:   deviceFinder,
+		pathChecker:    pathChecker,
 		xcodebuild:     xcodebuild,
 		outputEnvStore: outputEnvStore,
 		outputExporter: outputExporter,
@@ -124,14 +136,14 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 	s.logger.Infof("Simulator device:")
 	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.ID, simulator.Status)
 
-	var onlyTesting []string
-	if input.OnlyTesting != "" {
-		onlyTesting = strings.Split(input.OnlyTesting, "\n")
+	onlyTesting, err := s.processTestConfiguration(input.OnlyTesting)
+	if err != nil {
+		return nil, err
 	}
 
-	var skipTesting []string
-	if input.SkipTesting != "" {
-		skipTesting = strings.Split(input.SkipTesting, "\n")
+	skipTesting, err := s.processTestConfiguration(input.SkipTesting)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Config{
@@ -237,6 +249,32 @@ func (s XcodebuildTester) getSimulatorForDestination(destinationSpecifier string
 	}
 
 	return device, nil
+}
+
+func (s XcodebuildTester) processTestConfiguration(input string) ([]string, error) {
+	if input == "" {
+		return nil, nil
+	}
+
+	exists, err := s.pathChecker.IsPathExists(input)
+	if err != nil {
+		return nil, err
+	}
+
+	var contents string
+
+	if exists {
+		bytes, err := os.ReadFile(input)
+		if err != nil {
+			return nil, err
+		}
+
+		contents = string(bytes)
+	} else {
+		contents = input
+	}
+
+	return strings.Split(contents, "\n"), nil
 }
 
 func isStringFoundInOutput(searchStr, outputToSearchIn string) bool {

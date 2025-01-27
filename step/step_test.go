@@ -1,11 +1,14 @@
 package step
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/destination"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/mocks"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
@@ -27,6 +30,11 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 		"target5/testClass1",
 		"target6/testClass1/testFunction",
 	}
+
+	path := filepath.Join(t.TempDir(), "skip_testing.txt")
+	err := os.WriteFile(path, []byte(strings.Join(skipTesting, "\n")), 0644)
+	require.NoError(t, err)
+
 	inputs := map[string]string{
 		"xctestrun":                          "my_test.xctestrun",
 		"destination":                        "platform=iOS Simulator,name=iPhone 8 Plus,OS=latest",
@@ -35,7 +43,7 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 		"relaunch_tests_for_each_repetition": "no",
 		"xcodebuild_options":                 "-parallel-testing-enabled YES",
 		"only_testing":                       strings.Join(onlyTesting, "\n"),
-		"skip_testing":                       strings.Join(skipTesting, "\n"),
+		"skip_testing":                       path,
 	}
 	for key, value := range inputs {
 		testingMocks.envRepository.On("Get", key).Return(value)
@@ -148,7 +156,8 @@ func createStepAndMocks(t *testing.T) (XcodebuildTester, testingMocks) {
 	deviceFinder := mocks.NewDeviceFinder(t)
 	xcbuild := new(mocks.Xcodebuild)
 	outputExporter := new(mocks.OutputExporter)
-	step := NewXcodebuildTester(log.NewLogger(), inputParser, deviceFinder, xcbuild, envRepository, outputExporter)
+	pathChecker := pathutil.NewPathChecker()
+	step := NewXcodebuildTester(log.NewLogger(), inputParser, deviceFinder, pathChecker, xcbuild, envRepository, outputExporter)
 
 	m := testingMocks{
 		envRepository:  envRepository,
