@@ -3,6 +3,7 @@ package step
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/destination"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
 	"github.com/kballard/go-shellquote"
@@ -59,6 +61,9 @@ type Input struct {
 
 	DeployDir       string `env:"BITRISE_DEPLOY_DIR"`
 	TestingAddonDir string `env:"BITRISE_TEST_RESULT_DIR"`
+
+	OnlyTesting string `env:"only_testing"`
+	SkipTesting string `env:"skip_testing"`
 }
 
 type Config struct {
@@ -70,6 +75,8 @@ type Config struct {
 	RelaunchTestsForEachRepetition bool
 	DeployDir                      string
 	TestingAddonDir                string
+	OnlyTesting                    []string
+	SkipTesting                    []string
 }
 
 type Result struct {
@@ -82,16 +89,26 @@ type XcodebuildTester struct {
 	logger         log.Logger
 	inputParser    stepconf.InputParser
 	deviceFinder   destination.DeviceFinder
+	pathChecker    pathutil.PathChecker
 	xcodebuild     xcodebuild.Xcodebuild
 	outputEnvStore env.Repository
 	outputExporter OutputExporter
 }
 
-func NewXcodebuildTester(logger log.Logger, inputParser stepconf.InputParser, deviceFinder destination.DeviceFinder, xcodebuild xcodebuild.Xcodebuild, outputEnvStore env.Repository, outputExporter OutputExporter) XcodebuildTester {
+func NewXcodebuildTester(
+	logger log.Logger,
+	inputParser stepconf.InputParser,
+	deviceFinder destination.DeviceFinder,
+	pathChecker pathutil.PathChecker,
+	xcodebuild xcodebuild.Xcodebuild,
+	outputEnvStore env.Repository,
+	outputExporter OutputExporter,
+) XcodebuildTester {
 	return XcodebuildTester{
 		logger:         logger,
 		inputParser:    inputParser,
 		deviceFinder:   deviceFinder,
+		pathChecker:    pathChecker,
 		xcodebuild:     xcodebuild,
 		outputEnvStore: outputEnvStore,
 		outputExporter: outputExporter,
@@ -111,23 +128,35 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 		return nil, fmt.Errorf("provided xcodebuild options (%s) are not valid CLI parameters: %w", input.XcodebuildOptions, err)
 	}
 
-	destination, err := s.getSimulatorForDestination(input.Destination)
+	simulator, err := s.getSimulatorForDestination(input.Destination)
 	if err != nil {
 		return nil, err
 	}
 
 	s.logger.Infof("Simulator device:")
-	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", destination.Name, destination.OS, destination.ID, destination.Status)
+	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.ID, simulator.Status)
+
+	onlyTesting, err := s.processTestConfiguration(input.OnlyTesting)
+	if err != nil {
+		return nil, err
+	}
+
+	skipTesting, err := s.processTestConfiguration(input.SkipTesting)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Config{
 		Xctestrun:                      input.Xctestrun,
-		Destination:                    destination,
+		Destination:                    simulator,
 		XcodebuildOptions:              xcodebuildOptions,
 		TestRepetitionMode:             input.TestRepetitionMode,
 		MaximumTestRepetitions:         input.MaximumTestRepetitions,
 		RelaunchTestsForEachRepetition: input.RelaunchTestsForEachRepetition,
 		DeployDir:                      input.DeployDir,
 		TestingAddonDir:                input.TestingAddonDir,
+		OnlyTesting:                    onlyTesting,
+		SkipTesting:                    skipTesting,
 	}, nil
 }
 
@@ -140,14 +169,26 @@ func (s XcodebuildTester) Run(config Config) (*Result, error) {
 		TestingAddonDir: config.TestingAddonDir,
 	}
 
-	outputDir, err := s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.TestRepetitionMode, config.MaximumTestRepetitions, config.RelaunchTestsForEachRepetition, config.XcodebuildOptions...)
+	runTests := func() (string, error) {
+		return s.xcodebuild.TestWithoutBuilding(
+			config.Xctestrun,
+			config.OnlyTesting,
+			config.SkipTesting,
+			config.Destination,
+			config.TestRepetitionMode,
+			config.MaximumTestRepetitions,
+			config.RelaunchTestsForEachRepetition,
+			config.XcodebuildOptions...)
+	}
+
+	outputDir, err := runTests()
 	if err != nil {
 		var xcErr *xcodebuild.XcodebuildError
 		if errors.As(err, &xcErr) {
 			for _, errorPattern := range testRunnerErrorPatterns {
 				if isStringFoundInOutput(errorPattern, xcErr.Log) {
 					s.logger.Warnf("Automatic retry reason found in log: %s", errorPattern)
-					outputDir, err = s.xcodebuild.TestWithoutBuilding(config.Xctestrun, config.Destination, config.TestRepetitionMode, config.MaximumTestRepetitions, config.RelaunchTestsForEachRepetition, config.XcodebuildOptions...)
+					outputDir, err = runTests()
 				}
 			}
 		}
@@ -208,6 +249,32 @@ func (s XcodebuildTester) getSimulatorForDestination(destinationSpecifier string
 	}
 
 	return device, nil
+}
+
+func (s XcodebuildTester) processTestConfiguration(input string) ([]string, error) {
+	if input == "" {
+		return nil, nil
+	}
+
+	exists, err := s.pathChecker.IsPathExists(input)
+	if err != nil {
+		return nil, err
+	}
+
+	var contents string
+
+	if exists {
+		bytes, err := os.ReadFile(input)
+		if err != nil {
+			return nil, err
+		}
+
+		contents = string(bytes)
+	} else {
+		contents = input
+	}
+
+	return strings.Split(contents, "\n"), nil
 }
 
 func isStringFoundInOutput(searchStr, outputToSearchIn string) bool {

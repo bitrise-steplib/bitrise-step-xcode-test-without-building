@@ -25,7 +25,7 @@ const (
 )
 
 type Xcodebuild interface {
-	TestWithoutBuilding(xctestrun string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, options ...string) (string, error)
+	TestWithoutBuilding(xctestrun string, onlyTesting, skipTesting []string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, options ...string) (string, error)
 }
 
 type xcodebuild struct {
@@ -44,7 +44,7 @@ func New(logger log.Logger, commandFactory command.Factory, pathProvider pathuti
 	}
 }
 
-func (x xcodebuild) TestWithoutBuilding(xctestrun string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, opts ...string) (string, error) {
+func (x xcodebuild) TestWithoutBuilding(xctestrun string, onlyTesting, skipTesting []string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, opts ...string) (string, error) {
 	logFile, err := x.createXcodebuildLogFile()
 	if err != nil {
 		return "", err
@@ -64,8 +64,17 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun string, destination destinatio
 
 	var (
 		destinationParam = destination.XcodebuildDestination()
-		options          = createXcodebuildOptions(xctestrun, destinationParam, testRepetitionMode, maximumTestRepetitions, relaunchTestsForEachRepetition, outputDir, opts...)
-		cmd              = x.commandFactory.Create("xcodebuild", options, &command.Opts{
+		options          = createXcodebuildOptions(
+			xctestrun,
+			onlyTesting,
+			skipTesting,
+			destinationParam,
+			testRepetitionMode,
+			maximumTestRepetitions,
+			relaunchTestsForEachRepetition,
+			outputDir,
+			opts...)
+		cmd = x.commandFactory.Create("xcodebuild", options, &command.Opts{
 			Stdout: outputWriter,
 			Stderr: outputWriter,
 			Env:    []string{"NSUnbufferedIO=YES"},
@@ -132,7 +141,7 @@ func (x xcodebuild) handleError(xcodebuildErr error, outputDir string, logFile *
 	return outputDir, nil
 }
 
-func createXcodebuildOptions(xctestrun, destination, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, outputDir string, opts ...string) []string {
+func createXcodebuildOptions(xctestrun string, onlyTesting, skipTesting []string, destination, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, outputDir string, opts ...string) []string {
 	options := []string{"test-without-building", "-xctestrun", xctestrun, "-destination", destination, "-resultBundlePath", outputDir}
 
 	switch testRepetitionMode {
@@ -146,6 +155,22 @@ func createXcodebuildOptions(xctestrun, destination, testRepetitionMode string, 
 	}
 	if relaunchTestsForEachRepetition {
 		options = append(options, "-test-repetition-relaunch-enabled", "YES")
+	}
+
+	if 0 < len(onlyTesting) {
+		var args []string
+		for _, identifier := range onlyTesting {
+			args = append(args, fmt.Sprintf("-only-testing:%s", identifier))
+		}
+		options = append(options, args...)
+	}
+
+	if 0 < len(skipTesting) {
+		var args []string
+		for _, identifier := range skipTesting {
+			args = append(args, fmt.Sprintf("-skip-testing:%s", identifier))
+		}
+		options = append(options, args...)
 	}
 
 	return append(options, opts...)
