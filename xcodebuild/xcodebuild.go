@@ -171,11 +171,11 @@ func createXcodebuildOptions(testPath string, onlyTesting, skipTesting []string,
 	}
 
 	if 0 < len(skipTesting) {
-		var args []string
+		var args string
 		for _, identifier := range skipTesting {
-			args = append(args, fmt.Sprintf("-skip-testing:%s", identifier))
+			args += fmt.Sprintf("-skip-testing:%s ", identifier)
 		}
-		options = append(options, args...)
+		options = append(options, args)
 	}
 
 	return append(options, opts...)
