@@ -25,7 +25,7 @@ const (
 )
 
 type Xcodebuild interface {
-	TestWithoutBuilding(xctestrun string, onlyTesting, skipTesting []string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, options ...string) (string, error)
+	TestWithoutBuilding(testPath string, onlyTesting, skipTesting []string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, options ...string) (string, error)
 }
 
 type xcodebuild struct {
@@ -44,7 +44,7 @@ func New(logger log.Logger, commandFactory command.Factory, pathProvider pathuti
 	}
 }
 
-func (x xcodebuild) TestWithoutBuilding(xctestrun string, onlyTesting, skipTesting []string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, opts ...string) (string, error) {
+func (x xcodebuild) TestWithoutBuilding(testPath string, onlyTesting, skipTesting []string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, opts ...string) (string, error) {
 	logFile, err := x.createXcodebuildLogFile()
 	if err != nil {
 		return "", err
@@ -57,7 +57,7 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun string, onlyTesting, skipTesti
 
 	outputWriter := io.MultiWriter(os.Stdout, logFile)
 
-	outputDir, err := x.createTestOutputDir(xctestrun)
+	outputDir, err := x.createTestOutputDir(testPath)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +65,7 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun string, onlyTesting, skipTesti
 	var (
 		destinationParam = destination.XcodebuildDestination()
 		options          = createXcodebuildOptions(
-			xctestrun,
+			testPath,
 			onlyTesting,
 			skipTesting,
 			destinationParam,
@@ -96,13 +96,13 @@ func (x xcodebuild) createXcodebuildLogFile() (*os.File, error) {
 	return os.Create(path.Join(tempDir, "test-without-building.log"))
 }
 
-func (x xcodebuild) createTestOutputDir(xctestrun string) (string, error) {
+func (x xcodebuild) createTestOutputDir(testPath string) (string, error) {
 	tempDir, err := x.pathProvider.CreateTempDir("TestOutput")
 	if err != nil {
 		return "", err
 	}
 
-	fileName := strings.TrimSuffix(filepath.Base(xctestrun), filepath.Ext(xctestrun))
+	fileName := strings.TrimSuffix(filepath.Base(testPath), filepath.Ext(testPath))
 	return path.Join(tempDir, fmt.Sprintf("Test-%s.xcresult", fileName)), nil
 }
 
@@ -141,8 +141,13 @@ func (x xcodebuild) handleError(xcodebuildErr error, outputDir string, logFile *
 	return outputDir, nil
 }
 
-func createXcodebuildOptions(xctestrun string, onlyTesting, skipTesting []string, destination, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, outputDir string, opts ...string) []string {
-	options := []string{"test-without-building", "-xctestrun", xctestrun, "-destination", destination, "-resultBundlePath", outputDir}
+func createXcodebuildOptions(testPath string, onlyTesting, skipTesting []string, destination, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, outputDir string, opts ...string) []string {
+	var options []string
+	if filepath.Ext(testPath) == ".xctestproducts" {
+		options = []string{"test-without-building", "-testProductsPath", testPath, "-destination", destination, "-resultBundlePath", outputDir}
+	} else {
+		options = []string{"test-without-building", "-xctestrun", testPath, "-destination", destination, "-resultBundlePath", outputDir}
+	}
 
 	switch testRepetitionMode {
 	case TestRepetitionUntilFailure:
