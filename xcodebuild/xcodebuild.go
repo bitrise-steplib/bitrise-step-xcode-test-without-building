@@ -158,19 +158,22 @@ func createXcodebuildOptions(xctestrun string, onlyTesting, skipTesting []string
 	}
 
 	if 0 < len(onlyTesting) {
-		var args []string
+		// This is a string on purpose. It was an array before and the individual parameter escaping (putting it in quotes like "-only-testing:test-identifier")
+		// was not working as xcodebuild did not recognize the arguments. But if all of these parameters are put in a single string and escaped once, it works.
+		var args string
 		for _, identifier := range onlyTesting {
-			args = append(args, fmt.Sprintf("-only-testing:%s", identifier))
+			args += fmt.Sprintf("-only-testing:%s ", identifier)
 		}
-		options = append(options, args...)
+		options = append(options, args)
 	}
 
 	if 0 < len(skipTesting) {
-		var args []string
+		// Same as above
+		var args string
 		for _, identifier := range skipTesting {
-			args = append(args, fmt.Sprintf("-skip-testing:%s", identifier))
+			args += fmt.Sprintf("-skip-testing:%s ", identifier)
 		}
-		options = append(options, args...)
+		options = append(options, args)
 	}
 
 	return append(options, opts...)
