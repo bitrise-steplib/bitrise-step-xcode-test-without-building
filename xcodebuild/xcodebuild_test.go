@@ -18,7 +18,7 @@ func TestTestConfiguration(t *testing.T) {
 	commandMock.On("PrintableCommandArgs").Return("")
 	commandMock.On("Run").Return(nil)
 
-	params := []string{"test-without-building", "-xctestrun", "test.xctestrun", "-destination", "id=test-UDID", "-resultBundlePath", "/test/path/Test-test.xcresult", "-only-testing:target1 -only-testing:target2/testClass1 -only-testing:target3/testClass1/testFunction ", "-skip-testing:target4 -skip-testing:target5/testClass1 -skip-testing:target6/testClass1/testFunction "}
+	params := []string{"test-without-building", "-xctestrun", "test.xctestrun", "-destination", "id=test-UDID", "-resultBundlePath", "/test/path/Test-test.xcresult", "-only-testing:target1", "-only-testing:target2/testClass1", "-only-testing:target3/testClass1/testFunction", "-skip-testing:target4", "-skip-testing:target5/testClass1", "-skip-testing:target6/testClass1/testFunction"}
 
 	factoryMock := new(mocks.Factory)
 	factoryMock.On("Create", "xcodebuild", params, mock.Anything).Return(commandMock, nil).Once()

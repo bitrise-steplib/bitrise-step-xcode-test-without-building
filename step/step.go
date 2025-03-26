@@ -274,10 +274,22 @@ func (s XcodebuildTester) processTestConfiguration(input string) ([]string, erro
 		contents = input
 	}
 
-	return strings.Split(contents, "\n"), nil
+	identifiers := strings.Split(contents, "\n")
+
+	return removeEmptyLines(identifiers), nil
 }
 
 func isStringFoundInOutput(searchStr, outputToSearchIn string) bool {
 	r := regexp.MustCompile("(?i)" + searchStr)
 	return r.MatchString(outputToSearchIn)
+}
+
+func removeEmptyLines(lines []string) []string {
+	var result []string
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			result = append(result, line)
+		}
+	}
+	return result
 }
