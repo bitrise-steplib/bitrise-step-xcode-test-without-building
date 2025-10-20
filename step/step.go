@@ -148,7 +148,7 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 		return nil, err
 	}
 
-	quarantinedTests, err := s.processTestConfiguration(input.QuarantinedTests)
+	quarantinedTests, err := s.processQuarantinedTests(input.QuarantinedTests)
 	if err != nil {
 		return nil, err
 	}
