@@ -8,6 +8,17 @@ workflows:
     - TEST_APP_BRANCH: master
     - BITRISE_PROJECT_PATH: ./_tmp/BullsEye.xcworkspace
     - BITRISE_SCHEME: BullsEye
+    - TEST_PLAN: FullTests
+    - QUARANTINED_TESTS: |-
+        [
+          {
+            "testCaseName": "testGameStyleSwitch()",
+            "testSuiteName": [
+              "BullsEyeUITests"
+            ],
+            "className": "BullsEyeUITests2"
+          }
+        ]
     steps:
     - script:
         inputs:
@@ -24,7 +35,7 @@ workflows:
         inputs:
         - project_path: $BITRISE_PROJECT_PATH
         - scheme: $BITRISE_SCHEME
-        - xcodebuild_options: -testPlan FullTests
+        - test_plan: $TEST_PLAN
         - destination: generic/platform=iOS Simulator
     - path::./:
         title: Step Test
@@ -32,9 +43,30 @@ workflows:
         - xctestrun: $BITRISE_XCTESTRUN_FILE_PATH
         - destination: platform=iOS Simulator,name=Bitrise iOS default
         - xcodebuild_options: -parallel-testing-enabled NO
+        - quarantined_tests: $QUARANTINED_TESTS
     - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
         is_always_run: true
         inputs:
         - dirs: BITRISE_XCRESULT_PATH
         - deploy_dir: $BITRISE_DEPLOY_DIR
         - deployed_files: BITRISE_XCRESULT_ZIP_PATH
+    - script:
+        title: Check skipped tests
+        summary: This Step checks if the test results contain the skipped test method or not.
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            out=$(xcrun xcresulttool get test-results tests --path "$BITRISE_XCRESULT_PATH")
+            xcresulttool_exit_code=$?
+            if [ $xcresulttool_exit_code -ne 0 ]; then
+              echo "failed to get test results from xcresult: $out"
+              exit 1
+            fi
+            # Check if the skipped test method is in the results
+            set +e
+            grep_out=$(echo "$out" | grep "BullsEyeUITests2/testGameStyleSwitch()")
+            if [ ! -z "$grep_out" ]; then
+              echo "skipped test method found in test results"
+              exit 1
+            fi
