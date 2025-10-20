@@ -12,7 +12,7 @@ Tests compiled bundles by running `xcodebuild test-without-building` command.
 
 ## 🧩 Get started
 
-Add this step directly to your workflow in the [Bitrise Workflow Editor](https://devcenter.bitrise.io/steps-and-workflows/steps-and-workflows-index/).
+Add this step directly to your workflow in the [Bitrise Workflow Editor](https://docs.bitrise.io/en/bitrise-ci/workflows-and-pipelines/steps/adding-steps-to-a-workflow.html).
 
 You can also run this step directly with [Bitrise CLI](https://github.com/bitrise-io/bitrise).
 
@@ -25,10 +25,13 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | --- | --- | --- | --- |
 | `xctestrun` | Test run parameters file, generated during the build-for-testing action. | required | `$BITRISE_XCTESTRUN_FILE_PATH` |
 | `destination` | Destination specifier describes the device to use as a destination.  The input value sets xcodebuild's `-destination` option. | required | `platform=iOS Simulator,name=iPhone 8 Plus,OS=latest` |
+| `only_testing` | The step will execute only the listed tests.  The input value sets xcodebuild's `-only-testing` option and you can enter multiple test identifiers separated by a newline. The input field supports the same options as xcodebuild: - Test target name only: `MyAppTests` - Test target and test class name: `MyAppTests/MyAppTests` - Test target, class and function name: `MyAppTests/MyAppTests/testExample`  The input value can be a filepath as well which contains the list of tests separated by a newline character. |  |  |
+| `skip_testing` | The step will skip the listed tests during execution.  The input value sets xcodebuild's `-skip-testing` option and you can enter multiple test identifiers separated by a newline. The input field supports the same options as xcodebuild: - Test target name only: `MyAppTests` - Test target and test class name: `MyAppTests/MyAppTests` - Test target, class and function name: `MyAppTests/MyAppTests/testExample`  The input value can be a filepath as well which contains the list of tests separated by a newline character. |  |  |
 | `test_repetition_mode` | Determines how the tests will repeat.  Available options: - `none`: Tests will never repeat. - `until_failure`: Tests will repeat until failure or up to maximum repetitions. - `retry_on_failure`: Only failed tests will repeat up to maximum repetitions. - `up_until_maximum_repetitions`: Tests will repeat up until maximum repetitions.  The input value together with Maximum Test Repetitions (`maximum_test_repetitions`) input sets xcodebuild's `-run-tests-until-failure` / `-retry-tests-on-failure` or `-test-iterations` option. |  | `none` |
 | `maximum_test_repetitions` | The maximum number of times a test repeats based on the Test Repetition Mode (`test_repetition_mode`).  Should be more than 1 if the Test Repetition Mode is other than `none`.  The input value sets xcodebuild's `-test-iterations` option. | required | `3` |
 | `relaunch_tests_for_each_repetition` | If this input is set, tests will launch in a new process for each repetition.  By default, tests launch in the same process for each repetition.  The input value sets xcodebuild's `-test-repetition-relaunch-enabled` option. |  | `no` |
 | `xcodebuild_options` | Additional options to be added to the executed xcodebuild command. |  |  |
+| `quarantined_tests` | JSON list of tests added to quarantine on Bitrise.io, quarantined tests are excluded from test runs. |  | `$BITRISE_QUARANTINED_TESTS_JSON` |
 </details>
 
 <details>
@@ -44,9 +47,8 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 We welcome [pull requests](https://github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/pulls) and [issues](https://github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/issues) against this repository.
 
-For pull requests, work on your changes in a forked repository and use the Bitrise CLI to [run step tests locally](https://devcenter.bitrise.io/bitrise-cli/run-your-first-build/).
+For pull requests, work on your changes in a forked repository and use the Bitrise CLI to [run step tests locally](https://docs.bitrise.io/en/bitrise-ci/bitrise-cli/running-your-first-local-build-with-the-cli.html).
 
 Learn more about developing steps:
 
-- [Create your own step](https://devcenter.bitrise.io/contributors/create-your-own-step/)
-- [Testing your Step](https://devcenter.bitrise.io/contributors/testing-and-versioning-your-steps/)
+- [Create your own step](https://docs.bitrise.io/en/bitrise-ci/workflows-and-pipelines/developing-your-own-bitrise-step/developing-a-new-step.html)
