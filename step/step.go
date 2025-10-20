@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-steputils/v2/testquarantine"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
@@ -62,8 +63,9 @@ type Input struct {
 	DeployDir       string `env:"BITRISE_DEPLOY_DIR"`
 	TestingAddonDir string `env:"BITRISE_TEST_RESULT_DIR"`
 
-	OnlyTesting string `env:"only_testing"`
-	SkipTesting string `env:"skip_testing"`
+	OnlyTesting      string `env:"only_testing"`
+	SkipTesting      string `env:"skip_testing"`
+	QuarantinedTests string `env:"quarantined_tests"`
 }
 
 type Config struct {
@@ -145,6 +147,13 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	quarantinedTests, err := s.processTestConfiguration(input.QuarantinedTests)
+	if err != nil {
+		return nil, err
+	}
+
+	skipTesting = append(skipTesting, quarantinedTests...)
 
 	return &Config{
 		Xctestrun:                      input.Xctestrun,
@@ -249,6 +258,36 @@ func (s XcodebuildTester) getSimulatorForDestination(destinationSpecifier string
 	}
 
 	return device, nil
+}
+
+/*
+processQuarantinedTests converts the Bitrise quarantined tests JSON input ($BITRISE_QUARANTINED_TESTS_JSON)
+to test identifiers for the `-skip-testing` xcodebuild option. The test identifier format is: <TestTarget>/<TestClass>/<TestMethod>.
+*/
+func (s XcodebuildTester) processQuarantinedTests(quarantinedTestsInput string) ([]string, error) {
+	if quarantinedTestsInput == "" {
+		return nil, nil
+	}
+
+	quarantinedTests, err := testquarantine.ParseQuarantinedTests(quarantinedTestsInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse quarantined tests input: %w", err)
+	}
+
+	var skippedTests []string
+	for _, qt := range quarantinedTests {
+		if len(qt.TestSuiteName) == 0 || qt.TestSuiteName[0] == "" || qt.ClassName == "" || qt.TestCaseName == "" {
+			continue
+		}
+
+		testTarget := qt.TestSuiteName[0]
+		testClass := qt.ClassName
+		testMethod := qt.TestCaseName
+
+		skippedTests = append(skippedTests, fmt.Sprintf("%s/%s/%s", testTarget, testClass, testMethod))
+	}
+
+	return skippedTests, nil
 }
 
 func (s XcodebuildTester) processTestConfiguration(input string) ([]string, error) {

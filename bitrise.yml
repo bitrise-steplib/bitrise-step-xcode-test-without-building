@@ -34,7 +34,7 @@ workflows:
         inputs:
         - project_path: $BITRISE_PROJECT_PATH
         - scheme: $BITRISE_SCHEME
-        - xcodebuild_options: -testPlan FullTests
+        - test_plan: FullTests
         - destination: generic/platform=iOS Simulator
     - path::./:
         title: Step Test
