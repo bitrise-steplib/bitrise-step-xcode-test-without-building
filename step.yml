@@ -10,10 +10,12 @@ type_tags:
 - test
 
 project_type_tags:
-- ios
-- react-native
 - cordova
+- flutter
 - ionic
+- ios
+- kotlin-multiplatform
+- react-native
 
 toolkit:
   go:
