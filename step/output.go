@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bitrise-io/go-steputils/output"
+	"github.com/bitrise-io/go-steputils/v2/export"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 )
@@ -19,14 +19,17 @@ type OutputExporter interface {
 }
 
 type outputExporter struct {
+	exporter export.Exporter
 }
 
-func NewOutputExporter() OutputExporter {
-	return outputExporter{}
+func NewOutputExporter(cmdFactory command.Factory) OutputExporter {
+	return outputExporter{
+		exporter: export.NewDefaultExporter(cmdFactory),
+	}
 }
 
 func (e outputExporter) ZipAndExportOutput(artifact, destinationZipPth, envKey string) error {
-	return output.ZipAndExportOutput([]string{artifact}, destinationZipPth, envKey)
+	return e.exporter.ExportOutputFilesZip(envKey, []string{artifact}, destinationZipPth)
 }
 
 func (e outputExporter) CopyAndSaveTestData(artifact, targetAddonPath, testName string) error {

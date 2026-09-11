@@ -1,11 +1,10 @@
 module github.com/bitrise-steplib/bitrise-step-xcode-test-without-building
 
-go 1.17
+go 1.21
 
 require (
-	github.com/bitrise-io/go-steputils v1.0.5
-	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.40
-	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.26
+	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.54
+	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.39
 	github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.28
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/stretchr/testify v1.9.0
