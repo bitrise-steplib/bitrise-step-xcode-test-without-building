@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -123,7 +122,7 @@ func (x xcodebuild) handleError(xcodebuildErr error, outputDir string, logFile *
 				x.logger.Warnf("Failed to seek xcodebuild log file: %s", err)
 			}
 
-			log, err := ioutil.ReadAll(logFile)
+			log, err := io.ReadAll(logFile)
 			if err != nil {
 				x.logger.Warnf("Failed to open xcodebuild log file: %s", err)
 			}

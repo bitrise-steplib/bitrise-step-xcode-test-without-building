@@ -3,7 +3,6 @@ package step
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,7 +75,7 @@ func saveBundleMetadata(outputDir string, bundleName string) error {
 	if err != nil {
 		return fmt.Errorf("could not encode metadata: %w", err)
 	}
-	if err = ioutil.WriteFile(filepath.Join(outputDir, "test-info.json"), bytes, 0600); err != nil {
+	if err = os.WriteFile(filepath.Join(outputDir, "test-info.json"), bytes, 0600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
