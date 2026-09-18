@@ -3,12 +3,11 @@ package step
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/bitrise-io/go-steputils/output"
+	"github.com/bitrise-io/go-steputils/v2/export"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 )
@@ -19,14 +18,17 @@ type OutputExporter interface {
 }
 
 type outputExporter struct {
+	exporter export.Exporter
 }
 
-func NewOutputExporter() OutputExporter {
-	return outputExporter{}
+func NewOutputExporter(cmdFactory command.Factory) OutputExporter {
+	return outputExporter{
+		exporter: export.NewDefaultExporter(cmdFactory),
+	}
 }
 
 func (e outputExporter) ZipAndExportOutput(artifact, destinationZipPth, envKey string) error {
-	return output.ZipAndExportOutput([]string{artifact}, destinationZipPth, envKey)
+	return e.exporter.ExportOutputFilesZip(envKey, []string{artifact}, destinationZipPth)
 }
 
 func (e outputExporter) CopyAndSaveTestData(artifact, targetAddonPath, testName string) error {
@@ -73,7 +75,7 @@ func saveBundleMetadata(outputDir string, bundleName string) error {
 	if err != nil {
 		return fmt.Errorf("could not encode metadata: %w", err)
 	}
-	if err = ioutil.WriteFile(filepath.Join(outputDir, "test-info.json"), bytes, 0600); err != nil {
+	if err = os.WriteFile(filepath.Join(outputDir, "test-info.json"), bytes, 0600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
