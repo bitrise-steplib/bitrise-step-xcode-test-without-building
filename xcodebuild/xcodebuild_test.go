@@ -40,10 +40,34 @@ func TestTestConfiguration(t *testing.T) {
 		"target6/testClass1/testFunction",
 	}
 
-	_, err := xcbuild.TestWithoutBuilding("test.xctestrun", onlyTesting, skipTesting, device, "none", 0, false)
+	_, err := xcbuild.TestWithoutBuilding("test.xctestrun", onlyTesting, skipTesting, device, "none", 0, false, "")
 	require.NoError(t, err)
 
 	pathProviderMock.AssertExpectations(t)
 	commandMock.AssertExpectations(t)
+	factoryMock.AssertExpectations(t)
+}
+
+func TestCollectTestDiagnostics(t *testing.T) {
+	commandMock := new(mocks.Command)
+	commandMock.On("PrintableCommandArgs").Return("")
+	commandMock.On("Run").Return(nil)
+
+	// The Step's option comes before the user's additional options, so an explicit user option wins.
+	params := []string{"test-without-building", "-xctestrun", "test.xctestrun", "-destination", "id=test-UDID", "-resultBundlePath", "/test/path/Test-test.xcresult", "-collect-test-diagnostics", "never", "-parallel-testing-enabled", "YES"}
+
+	factoryMock := new(mocks.Factory)
+	factoryMock.On("Create", "xcodebuild", params, mock.Anything).Return(commandMock, nil).Once()
+
+	pathProviderMock := new(mocks.PathProvider)
+	pathProviderMock.On("CreateTempDir", "xcodebuild").Return(os.TempDir(), nil).Once()
+	pathProviderMock.On("CreateTempDir", "TestOutput").Return("/test/path", nil).Once()
+
+	xcbuild := New(log.NewLogger(), factoryMock, pathProviderMock, pathutil.NewPathChecker())
+	device := destination.Device{ID: "test-UDID"}
+
+	_, err := xcbuild.TestWithoutBuilding("test.xctestrun", nil, nil, device, "none", 0, false, "never", "-parallel-testing-enabled", "YES")
+	require.NoError(t, err)
+
 	factoryMock.AssertExpectations(t)
 }

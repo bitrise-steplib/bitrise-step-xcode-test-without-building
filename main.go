@@ -62,5 +62,5 @@ func createXcodebuildTester(logger log.Logger) step.XcodebuildTester {
 	xcbuild := xcodebuild.New(logger, commandFactory, pathProvider, pathChecker)
 	outputExporter := step.NewOutputExporter(commandFactory)
 
-	return step.NewXcodebuildTester(logger, inputParser, deviceFinder, pathChecker, xcbuild, outputEnvStore, outputExporter)
+	return step.NewXcodebuildTester(logger, inputParser, deviceFinder, pathChecker, xcbuild, outputEnvStore, outputExporter, xcodeVersion.MajorVersion)
 }
