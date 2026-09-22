@@ -56,6 +56,8 @@ type Input struct {
 	Destination       string `env:"destination,required"`
 	XcodebuildOptions string `env:"xcodebuild_options"`
 
+	CollectSimulatorDiagnostics string `env:"collect_simulator_diagnostics,opt[project_setting,on_failure,never]"`
+
 	TestRepetitionMode             string `env:"test_repetition_mode,opt[none,until_failure,retry_on_failure,up_until_maximum_repetitions]"`
 	MaximumTestRepetitions         int    `env:"maximum_test_repetitions,required"`
 	RelaunchTestsForEachRepetition bool   `env:"relaunch_tests_for_each_repetition,opt[yes,no]"`
@@ -72,6 +74,7 @@ type Config struct {
 	Xctestrun                      string
 	Destination                    destination.Device
 	XcodebuildOptions              []string
+	XcodebuildDiagnosticsOverride  string
 	TestRepetitionMode             string
 	MaximumTestRepetitions         int
 	RelaunchTestsForEachRepetition bool
@@ -95,6 +98,8 @@ type XcodebuildTester struct {
 	xcodebuild     xcodebuild.Xcodebuild
 	outputEnvStore env.Repository
 	outputExporter OutputExporter
+
+	xcodeMajorVersion int64
 }
 
 func NewXcodebuildTester(
@@ -105,15 +110,17 @@ func NewXcodebuildTester(
 	xcodebuild xcodebuild.Xcodebuild,
 	outputEnvStore env.Repository,
 	outputExporter OutputExporter,
+	xcodeMajorVersion int64,
 ) XcodebuildTester {
 	return XcodebuildTester{
-		logger:         logger,
-		inputParser:    inputParser,
-		deviceFinder:   deviceFinder,
-		pathChecker:    pathChecker,
-		xcodebuild:     xcodebuild,
-		outputEnvStore: outputEnvStore,
-		outputExporter: outputExporter,
+		logger:            logger,
+		inputParser:       inputParser,
+		deviceFinder:      deviceFinder,
+		pathChecker:       pathChecker,
+		xcodebuild:        xcodebuild,
+		outputEnvStore:    outputEnvStore,
+		outputExporter:    outputExporter,
+		xcodeMajorVersion: xcodeMajorVersion,
 	}
 }
 
@@ -159,6 +166,7 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 		Xctestrun:                      input.Xctestrun,
 		Destination:                    simulator,
 		XcodebuildOptions:              xcodebuildOptions,
+		XcodebuildDiagnosticsOverride:  xcodebuildDiagnosticsOverride(input.CollectSimulatorDiagnostics, s.xcodeMajorVersion, xcodebuildOptions),
 		TestRepetitionMode:             input.TestRepetitionMode,
 		MaximumTestRepetitions:         input.MaximumTestRepetitions,
 		RelaunchTestsForEachRepetition: input.RelaunchTestsForEachRepetition,
@@ -187,6 +195,7 @@ func (s XcodebuildTester) Run(config Config) (*Result, error) {
 			config.TestRepetitionMode,
 			config.MaximumTestRepetitions,
 			config.RelaunchTestsForEachRepetition,
+			config.XcodebuildDiagnosticsOverride,
 			config.XcodebuildOptions...)
 	}
 

@@ -42,6 +42,7 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 		"maximum_test_repetitions":           "3",
 		"relaunch_tests_for_each_repetition": "no",
 		"xcodebuild_options":                 "-parallel-testing-enabled YES",
+		"collect_simulator_diagnostics":      "never",
 		"only_testing":                       strings.Join(onlyTesting, "\n"),
 		"skip_testing":                       path,
 	}
@@ -60,15 +61,42 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 	// Then
 	require.NoError(t, err)
 	require.Equal(t, []string{"-parallel-testing-enabled", "YES"}, config.XcodebuildOptions)
+	require.Equal(t, "never", config.XcodebuildDiagnosticsOverride)
 	require.Equal(t, onlyTesting, config.OnlyTesting)
 	require.Equal(t, skipTesting, config.SkipTesting)
+}
+
+func Test_GivenProjectSetting_WhenProcessConfig_ThenNoDiagnosticsOverride(t *testing.T) {
+	// Given
+	step, testingMocks := createStepAndMocks(t)
+
+	inputs := map[string]string{
+		"xctestrun":                          "my_test.xctestrun",
+		"destination":                        "platform=iOS Simulator,name=iPhone 8 Plus,OS=latest",
+		"test_repetition_mode":               "none",
+		"maximum_test_repetitions":           "3",
+		"relaunch_tests_for_each_repetition": "no",
+		"collect_simulator_diagnostics":      "project_setting",
+	}
+	for key, value := range inputs {
+		testingMocks.envRepository.On("Get", key).Return(value)
+	}
+	testingMocks.envRepository.On("Get", mock.Anything).Return("")
+	testingMocks.deviceFinder.On("FindDevice", mock.Anything, mock.Anything).Return(destination.Device{ID: "test-UDID"}, nil)
+
+	// When
+	config, err := step.ProcessConfig()
+
+	// Then
+	require.NoError(t, err)
+	require.Equal(t, "", config.XcodebuildDiagnosticsOverride)
 }
 
 func Test_GivenStep_WhenXcodebuildFailsOnAutomaticRetryReason_ThenXcodebuildCommandRetried(t *testing.T) {
 	// Given
 	step, testingMocks := createStepAndMocks(t)
 
-	testingMocks.xcodebuild.On("TestWithoutBuilding", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", &xcodebuild.XcodebuildError{Log: "Test runner never began executing tests after launching."})
+	testingMocks.xcodebuild.On("TestWithoutBuilding", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", &xcodebuild.XcodebuildError{Log: "Test runner never began executing tests after launching."})
 	testingMocks.logger.On("Println").Return()
 	testingMocks.logger.On("Infof", mock.Anything).Return()
 	testingMocks.logger.On("Warnf", mock.Anything, mock.Anything).Return()
@@ -157,7 +185,8 @@ func createStepAndMocks(t *testing.T) (XcodebuildTester, testingMocks) {
 	xcbuild := new(mocks.Xcodebuild)
 	outputExporter := new(mocks.OutputExporter)
 	pathChecker := pathutil.NewPathChecker()
-	step := NewXcodebuildTester(log.NewLogger(), inputParser, deviceFinder, pathChecker, xcbuild, envRepository, outputExporter)
+	// Xcode 27 so that the -collect-test-diagnostics mapping is exercised.
+	step := NewXcodebuildTester(log.NewLogger(), inputParser, deviceFinder, pathChecker, xcbuild, envRepository, outputExporter, 27)
 
 	m := testingMocks{
 		envRepository:  envRepository,
