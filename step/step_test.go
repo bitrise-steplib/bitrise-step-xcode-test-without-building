@@ -64,6 +64,103 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 	require.Equal(t, skipTesting, config.SkipTesting)
 }
 
+func Test_GivenQuarantinedTests_WhenProcessed_ThenPrefersTheTestCaseIdentifier(t *testing.T) {
+	tests := []struct {
+		name                string
+		quarantinedTests    string
+		expectedSkipTesting []string
+	}{
+		{
+			name:                "no quarantined tests",
+			quarantinedTests:    "",
+			expectedSkipTesting: nil,
+		},
+		{
+			name: "entries without an identifier",
+			quarantinedTests: `
+[
+  {
+    "testCaseName": "testMethod1()",
+    "testSuiteName": [
+      "Target1"
+    ],
+    "className": "Class1"
+  }
+]`,
+			expectedSkipTesting: []string{"Target1/Class1/testMethod1()"},
+		},
+		{
+			name: "entries with an identifier",
+			quarantinedTests: `
+[
+  {
+    "testCaseName": "Score is computed when the guess matches the target",
+    "testSuiteName": [
+      "Target1"
+    ],
+    "className": "Suite1",
+    "testCaseIdentifier": "Suite1/scoreIsComputedWhenGuessMatchesTarget()"
+  },
+  {
+    "testCaseName": "method1()",
+    "testSuiteName": [
+      "Target1"
+    ],
+    "testCaseIdentifier": "Suite1/NestedSuite/method1()"
+  }
+]`,
+			expectedSkipTesting: []string{
+				"Target1/Suite1/scoreIsComputedWhenGuessMatchesTarget()",
+				"Target1/Suite1/NestedSuite/method1()",
+			},
+		},
+		{
+			name: "incomplete entries",
+			quarantinedTests: `
+[
+  {
+    "testCaseName": "testMethod1()",
+    "testSuiteName": [],
+    "className": "Class1"
+  },
+  {
+    "testCaseName": "testMethod2()",
+    "testSuiteName": [
+      "Target1"
+    ]
+  },
+  {
+    "testSuiteName": [
+      "Target1"
+    ],
+    "className": "Class1"
+  },
+  {
+    "testCaseName": "testMethod3()",
+    "testSuiteName": [
+      "Target1"
+    ],
+    "className": "Class1"
+  }
+]`,
+			expectedSkipTesting: []string{"Target1/Class1/testMethod3()"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
+			step, _ := createStepAndMocks(t)
+
+			// When
+			skipTesting, err := step.processQuarantinedTests(tt.quarantinedTests)
+
+			// Then
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedSkipTesting, skipTesting)
+		})
+	}
+}
+
 func Test_GivenStep_WhenXcodebuildFailsOnAutomaticRetryReason_ThenXcodebuildCommandRetried(t *testing.T) {
 	// Given
 	step, testingMocks := createStepAndMocks(t)
