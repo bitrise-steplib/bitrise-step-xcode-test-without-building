@@ -1,22 +1,29 @@
 module github.com/bitrise-steplib/bitrise-step-xcode-test-without-building
 
-go 1.21
+go 1.23
 
 require (
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.55
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.39
-	github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.28
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/stretchr/testify v1.9.0
+	github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.88.0.20260926171939-bf9106ab6a60
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
 	github.com/bitrise-io/go-utils v1.0.13 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/globocom/go-buffer/v2 v2.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

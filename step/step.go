@@ -14,8 +14,8 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/destination"
+	"github.com/bitrise-io/go-xcode/v2/xcodecommand"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
-	"github.com/kballard/go-shellquote"
 )
 
 const (
@@ -125,9 +125,9 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 
 	stepconf.Print(input)
 
-	xcodebuildOptions, err := shellquote.Split(input.XcodebuildOptions)
+	xcodebuildOptions, err := xcodecommand.SplitAdditionalOptions(input.XcodebuildOptions)
 	if err != nil {
-		return nil, fmt.Errorf("provided xcodebuild options (%s) are not valid CLI parameters: %w", input.XcodebuildOptions, err)
+		return nil, err
 	}
 
 	simulator, err := s.getSimulatorForDestination(input.Destination)
@@ -136,7 +136,7 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 	}
 
 	s.logger.Infof("Simulator device:")
-	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.ID, simulator.Status)
+	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.UDID, simulator.State)
 
 	onlyTesting, err := s.processTestConfiguration(input.OnlyTesting)
 	if err != nil {
