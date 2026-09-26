@@ -5,8 +5,7 @@ go 1.23
 require (
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.55
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.39
-	github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.88.0.20260926133239-c3f1b9cc4096
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+	github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.88.0.20260926163710-5dd93f871ddf
 	github.com/stretchr/testify v1.10.0
 )
 
@@ -17,6 +16,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
