@@ -51,7 +51,7 @@ func Test_GivenStep_WhenProcessConfig_ThenSplitsAdditionalOptions(t *testing.T) 
 
 	testingMocks.envRepository.On("Get", mock.Anything).Return("")
 	testingMocks.deviceFinder.On("FindDevice", mock.Anything, mock.Anything).Return(destination.Device{
-		ID: "test-UDID",
+		UDID: "test-UDID",
 	}, nil)
 
 	// When
@@ -172,7 +172,7 @@ func Test_GivenStep_WhenXcodebuildFailsOnAutomaticRetryReason_ThenXcodebuildComm
 
 	config := Config{
 		Xctestrun:                      "",
-		Destination:                    destination.Device{ID: "test-UDID"},
+		Destination:                    destination.Device{UDID: "test-UDID"},
 		XcodebuildOptions:              nil,
 		TestRepetitionMode:             "",
 		MaximumTestRepetitions:         0,

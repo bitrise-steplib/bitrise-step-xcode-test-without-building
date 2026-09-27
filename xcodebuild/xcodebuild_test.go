@@ -28,7 +28,7 @@ func TestTestConfiguration(t *testing.T) {
 	pathProviderMock.On("CreateTempDir", "TestOutput").Return("/test/path", nil).Once()
 
 	xcbuild := New(log.NewLogger(), factoryMock, pathProviderMock, pathutil.NewPathChecker())
-	device := destination.Device{ID: "test-UDID"}
+	device := destination.Device{UDID: "test-UDID"}
 	onlyTesting := []string{
 		"target1",
 		"target2/testClass1",
