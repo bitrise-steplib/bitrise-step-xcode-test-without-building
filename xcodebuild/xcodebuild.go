@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -26,14 +27,17 @@ type xcodebuild struct {
 	commandFactory command.Factory
 	pathProvider   pathutil.PathProvider
 	pathChecker    pathutil.PathChecker
+
+	optionDiagnosticsLogged *bool // the step retries the test run with the same options
 }
 
 func New(logger log.Logger, commandFactory command.Factory, pathProvider pathutil.PathProvider, pathChecker pathutil.PathChecker) Xcodebuild {
 	return xcodebuild{
-		commandFactory: commandFactory,
-		logger:         logger,
-		pathProvider:   pathProvider,
-		pathChecker:    pathChecker,
+		commandFactory:          commandFactory,
+		logger:                  logger,
+		pathProvider:            pathProvider,
+		pathChecker:             pathChecker,
+		optionDiagnosticsLogged: new(bool),
 	}
 }
 
@@ -69,9 +73,7 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun string, onlyTesting, skipTesti
 	if err != nil {
 		return "", err
 	}
-	for _, d := range cmd.Diagnostics() {
-		x.logger.Warnf("xcodebuild_options: %s", d)
-	}
+	x.logOptionDiagnostics(cmd, opts)
 
 	xcodebuildCmd := cmd.Create(x.commandFactory, &command.Opts{
 		Stdout: outputWriter,
@@ -83,6 +85,23 @@ func (x xcodebuild) TestWithoutBuilding(xctestrun string, onlyTesting, skipTesti
 	xcodebuildErr := xcodebuildCmd.Run()
 
 	return x.handleError(xcodebuildErr, outputDir, logFile)
+}
+
+// logOptionDiagnostics logs what the command's merge found in xcodebuild_options, once: the
+// parser's findings were logged with the inputs, and a retry rebuilds the same command.
+func (x xcodebuild) logOptionDiagnostics(cmd xcodecommand.Command, opts []string) {
+	if x.optionDiagnosticsLogged != nil {
+		if *x.optionDiagnosticsLogged {
+			return
+		}
+		*x.optionDiagnosticsLogged = true
+	}
+	reported := xcodecommand.ParseAdditionalOptions(opts).Diagnostics()
+	for _, d := range cmd.Diagnostics() {
+		if !slices.Contains(reported, d) {
+			x.logger.Warnf("xcodebuild_options: %s", d)
+		}
+	}
 }
 
 func (x xcodebuild) createXcodebuildLogFile() (*os.File, error) {

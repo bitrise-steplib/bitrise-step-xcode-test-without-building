@@ -133,6 +133,11 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	// What the parser finds is reported here, before any xcodebuild call; the test command
+	// adds what its merge finds when it is assembled.
+	for _, d := range xcodecommand.ParseAdditionalOptions(xcodebuildOptions).Diagnostics() {
+		s.logger.Warnf("xcodebuild_options: %s", d)
+	}
 
 	simulator, err := s.getSimulatorForDestination(input.Destination)
 	if err != nil {
