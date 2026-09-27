@@ -17,12 +17,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodecommand"
 )
 
-const (
-	TestRepetitionNone           = string(xcodecommand.TestRepetitionNone)
-	TestRepetitionUntilFailure   = string(xcodecommand.TestRepetitionUntilFailure)
-	TestRepetitionRetryOnFailure = string(xcodecommand.TestRepetitionRetryOnFailure)
-)
-
 type Xcodebuild interface {
 	TestWithoutBuilding(xctestrun string, onlyTesting, skipTesting []string, destination destination.Device, testRepetitionMode string, maximumTestRepetitions int, relaunchTestsForEachRepetition bool, options ...string) (string, error)
 }

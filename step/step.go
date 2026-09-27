@@ -125,6 +125,10 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 
 	stepconf.Print(input)
 
+	if err := xcodecommand.ValidateTestRepetition(xcodecommand.TestRepetitionMode(input.TestRepetitionMode), input.MaximumTestRepetitions, input.RelaunchTestsForEachRepetition); err != nil {
+		return nil, err
+	}
+
 	xcodebuildOptions, err := xcodecommand.SplitAdditionalOptions(input.XcodebuildOptions)
 	if err != nil {
 		return nil, err
