@@ -136,7 +136,7 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 	}
 
 	s.logger.Infof("Simulator device:")
-	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.ID, simulator.Status)
+	s.logger.Printf("- name: %s, version: %s, UDID: %s, status: %s", simulator.Name, simulator.OS, simulator.UDID, simulator.State)
 
 	onlyTesting, err := s.processTestConfiguration(input.OnlyTesting)
 	if err != nil {
