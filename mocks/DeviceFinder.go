@@ -47,3 +47,29 @@ func NewDeviceFinder(t mockConstructorTestingTNewDeviceFinder) *DeviceFinder {
 
 	return mock
 }
+
+// ListDevices provides a mock function with given fields:
+func (_m *DeviceFinder) ListDevices() (*destination.DeviceList, error) {
+	ret := _m.Called()
+
+	var r0 *destination.DeviceList
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (*destination.DeviceList, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() *destination.DeviceList); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*destination.DeviceList)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
