@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-steputils/v2/stepenv"
@@ -32,7 +33,13 @@ func run() int {
 		return exitCode
 	}
 
+	shadow := xcodebuildTester.StartTestSelectionShadow(*config)
+
+	started := time.Now()
 	result, err := xcodebuildTester.Run(*config)
+	if result != nil {
+		xcodebuildTester.FinishTestSelectionShadow(shadow, result.TestOutputDir, time.Since(started))
+	}
 	if err != nil {
 		logger.TErrorf(err.Error())
 		exitCode = 1
