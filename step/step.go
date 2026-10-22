@@ -14,6 +14,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/destination"
+	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/testselection"
 	"github.com/bitrise-steplib/bitrise-step-xcode-test-without-building/xcodebuild"
 	"github.com/kballard/go-shellquote"
 )
@@ -66,6 +67,8 @@ type Input struct {
 	OnlyTesting      string `env:"only_testing"`
 	SkipTesting      string `env:"skip_testing"`
 	QuarantinedTests string `env:"quarantined_tests"`
+	TestSelection    string `env:"test_selection"`
+	OnEmptySelection string `env:"on_empty_selection"`
 }
 
 type Config struct {
@@ -79,6 +82,9 @@ type Config struct {
 	TestingAddonDir                string
 	OnlyTesting                    []string
 	SkipTesting                    []string
+	// SkipTests is set when the test selection decided that nothing needs to run.
+	SkipTests  bool
+	SkipReason string
 }
 
 type Result struct {
@@ -125,6 +131,14 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 
 	stepconf.Print(input)
 
+	selectedTests, skipReason, err := s.processTestSelection(input.TestSelection, input.OnEmptySelection)
+	if err != nil {
+		return nil, err
+	}
+	if skipReason != "" {
+		return &Config{DeployDir: input.DeployDir, TestingAddonDir: input.TestingAddonDir, SkipTests: true, SkipReason: skipReason}, nil
+	}
+
 	xcodebuildOptions, err := shellquote.Split(input.XcodebuildOptions)
 	if err != nil {
 		return nil, fmt.Errorf("provided xcodebuild options (%s) are not valid CLI parameters: %w", input.XcodebuildOptions, err)
@@ -155,6 +169,13 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 
 	skipTesting = append(skipTesting, quarantinedTests...)
 
+	if len(selectedTests) > 0 {
+		if len(onlyTesting) > 0 {
+			s.logger.Warnf("Both test_selection and only_testing are set; the test selection takes precedence")
+		}
+		onlyTesting = selectedTests
+	}
+
 	return &Config{
 		Xctestrun:                      input.Xctestrun,
 		Destination:                    simulator,
@@ -170,13 +191,19 @@ func (s XcodebuildTester) ProcessConfig() (*Config, error) {
 }
 
 func (s XcodebuildTester) Run(config Config) (*Result, error) {
-	s.logger.Println()
-	s.logger.Infof("Running tests:")
-
 	result := &Result{
 		DeployDir:       config.DeployDir,
 		TestingAddonDir: config.TestingAddonDir,
 	}
+
+	if config.SkipTests {
+		s.logger.Println()
+		s.logger.Infof("Skipping the test run: %s", config.SkipReason)
+		return result, nil
+	}
+
+	s.logger.Println()
+	s.logger.Infof("Running tests:")
 
 	runTests := func() (string, error) {
 		return s.xcodebuild.TestWithoutBuilding(
@@ -302,6 +329,40 @@ func skipTestingIdentifier(quarantinedTest testquarantine.QuarantinedTest) strin
 	}
 
 	return fmt.Sprintf("%s/%s/%s", testTarget, quarantinedTest.ClassName, quarantinedTest.TestCaseName)
+}
+
+// processTestSelection turns the Test Selection step's output into -only-testing
+// identifiers. A non-empty skip reason means nothing should run.
+func (s XcodebuildTester) processTestSelection(path, onEmpty string) ([]string, string, error) {
+	sel, err := testselection.Load(path)
+	if err != nil {
+		return nil, "", err
+	}
+	decision, err := testselection.Decide(sel, onEmpty, "xcode", "spm", "manual")
+	if err != nil {
+		return nil, "", err
+	}
+	if sel == nil {
+		return nil, "", nil
+	}
+
+	s.logger.Println()
+	s.logger.Infof("Test selection: %s", decision.Reason)
+	switch decision.Action {
+	case testselection.Skip:
+		return nil, decision.Reason, nil
+	case testselection.RunSelected:
+		var identifiers []string
+		for _, t := range decision.Tests {
+			if t.Identifiers.OnlyTesting != "" {
+				s.logger.Printf("- %s (%s)", t.Identifiers.OnlyTesting, t.Reason)
+				identifiers = append(identifiers, t.Identifiers.OnlyTesting)
+			}
+		}
+		return identifiers, "", nil
+	default:
+		return nil, "", nil
+	}
 }
 
 func (s XcodebuildTester) processTestConfiguration(input string) ([]string, error) {
